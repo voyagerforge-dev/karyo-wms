@@ -1,0 +1,289 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compile:
+    name: Compile
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Compile Kotlin
+        run: ./gradlew --no-daemon compileKotlin compileTestKotlin
+
+  test:
+    name: Tests
+    needs: compile
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      # The @QuarkusTest suites start their own PostgreSQL and Keycloak through Dev
+      # Services, so the runner's container runtime is a hard prerequisite. Print it
+      # rather than discover its absence three minutes into the suite.
+      - name: Container runtime
+        run: docker version --format 'server={{.Server.Version}}'
+      - name: Run every module test task
+        env:
+          QUARKUS_HTTP_TEST_PORT: '0'
+        run: ./gradlew --no-daemon test
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: '**/build/reports/tests/'
+          retention-days: 7
+
+  frontend:
+    name: Frontend web (build + unit tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/web/package-lock.json
+      - name: Install dependencies
+        working-directory: frontend/web
+        run: npm ci
+      - name: 'Lint (non-blocking: pre-existing findings)'
+        working-directory: frontend/web
+        run: npm run lint
+        continue-on-error: true
+      - name: Unit tests (vitest)
+        working-directory: frontend/web
+        run: npm test
+      - name: Build
+        working-directory: frontend/web
+        run: npm run build
+      # The end-to-end specs need a running stack, which this workflow does not raise.
+      # Collecting them still proves they parse, that every fixture resolves and that
+      # no spec has been orphaned by a rename.
+      - name: Browser helpers and collection (no live stack)
+        working-directory: tests/e2e
+        run: |
+          npm ci
+          npm run test:helpers
+          npx playwright test --list --reporter=list
+          npx playwright test --config=playwright.operational.config.ts --list --reporter=list
+
+  mobile:
+    name: Floor PWA (build + unit tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/mobile/package-lock.json
+      - name: Install dependencies
+        working-directory: frontend/mobile
+        run: npm ci
+      - name: Lint
+        working-directory: frontend/mobile
+        run: npm run lint
+      - name: Unit tests (vitest)
+        working-directory: frontend/mobile
+        run: npm test
+      - name: Build
+        working-directory: frontend/mobile
+        run: npm run build
+
+  quality:
+    name: Quality
+    needs: compile
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Detekt static analysis
+        run: ./gradlew --no-daemon detekt
+      - name: Upload quality reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-reports
+          path: '**/build/reports/detekt/'
+          retention-days: 7
+
+  package:
+    name: Package
+    needs: [compile, test, frontend, mobile, quality, pact-verify]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      # Every image build below must carry a determinism setting, or a layer whose
+      # content did not change gets a fresh digest and an upgrade re-transfers it.
+      # The audit reads the build commands themselves, so it fails here rather than
+      # in a customer's download.
+      - name: Audit image-build determinism
+        run: ./scripts/check-image-reproducibility.sh
+      - name: Build karyo-app (Quarkus fast-jar)
+        run: ./gradlew --no-daemon :services:karyo-app:quarkusBuild -Dquarkus.profile=prod
+      - name: Build the application image
+        run: |
+          SOURCE_DATE_EPOCH=0 docker build \
+            -f infrastructure/docker/Dockerfile.service \
+            --build-arg SERVICE_DIR=services/karyo-app \
+            -t "karyo-app:${{ github.sha }}" .
+      - name: Build the web image
+        run: |
+          SOURCE_DATE_EPOCH=0 docker build \
+            -f infrastructure/docker/Dockerfile.nginx \
+            -t "karyo-nginx:${{ github.sha }}" .
+      - name: Images are built, not published
+        run: >-
+          echo 'Both images built successfully. This workflow publishes nothing:
+          the free tier is built from source by whoever runs it.'
+
+  # The one place the four Pact provider tests run. In `test` no broker is named, so they are
+  # skipped and say why; here an ephemeral broker is started, the console's consumer pacts are
+  # published to it, the provider tests are pointed at it, and the verified interactions are
+  # counted against the published ones.
+  pact-verify:
+    name: Pact verification
+    needs: compile
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/web/package-lock.json
+      # Waited on until it answers, not just until the container starts. The broker is addressed
+      # as 127.0.0.1 throughout, the JVM property included: a host that resolves localhost to ::1
+      # first can reset IPv6 connections to a published port while the broker itself is healthy.
+      - name: Start an ephemeral Pact Broker
+        run: |
+          docker run -d --name pact-broker -p 9292:9292 \
+            -e PACT_BROKER_DATABASE_URL=sqlite:////tmp/pact_broker.db \
+            docker.io/pactfoundation/pact-broker:2.142.0-pactbroker2.120.0
+          for i in $(seq 1 60); do
+            if curl -sSf -o /dev/null http://127.0.0.1:9292/; then echo "broker up after ${i}s"; exit 0; fi
+            sleep 1
+          done
+          echo "::error::the Pact broker did not answer within 60s"
+          docker logs pact-broker | tail -40
+          exit 1
+      - name: Generate the console's consumer pacts
+        working-directory: frontend/web
+        run: |
+          npm ci
+          npx vitest run src/test/pact/
+      # Exactly four, or fail: a consumer spec that silently stopped writing its pact would leave
+      # a provider with nothing to verify.
+      - name: Publish the consumer pacts
+        env:
+          CONSUMER_VERSION: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          pacts=(frontend/web/pacts/*.json)
+          [ "${#pacts[@]}" -eq 4 ] || { echo "::error::expected 4 consumer pacts, found ${#pacts[@]}"; exit 1; }
+          for f in "${pacts[@]}"; do
+            consumer=$(jq -r .consumer.name "$f")
+            provider=$(jq -r .provider.name "$f")
+            echo "publishing ${consumer} -> ${provider}"
+            curl -sSf -X PUT -H 'Content-Type: application/json' -d @"$f" \
+              "http://127.0.0.1:9292/pacts/provider/${provider}/consumer/${consumer}/version/${CONSUMER_VERSION}"
+          done
+      - name: Verify the provider contracts
+        env:
+          QUARKUS_HTTP_TEST_PORT: '0'
+        run: >-
+          ./gradlew --no-daemon :services:karyo-app:test --tests '*PactProviderTest'
+          -Dpact.broker.url=http://127.0.0.1:9292
+      # An unreachable or empty broker already fails the provider tests. This closes what is left:
+      # pact-jvm runs one test per interaction, so the passed count must equal the published count,
+      # not merely be above zero.
+      - name: Every published interaction was verified
+        run: |
+          set -euo pipefail
+          published=$(jq -s 'map(.interactions | length) | add' frontend/web/pacts/*.json)
+          verified=0
+          for f in services/karyo-app/build/test-results/test/TEST-*PactProviderTest.xml; do
+            n=$(python3 - "$f" <<'EOF'
+          import sys, xml.etree.ElementTree as E
+          cases = E.parse(sys.argv[1]).getroot().iter("testcase")
+          print(sum(all(c.find(t) is None for t in ("skipped", "failure", "error")) for c in cases))
+          EOF
+            )
+            echo "$(basename "$f" .xml): ${n} verified"
+            verified=$((verified + n))
+          done
+          echo "published=${published} verified=${verified}"
+          if [ "$published" -eq 0 ] || [ "$verified" -ne "$published" ]; then
+            echo "::error::verified ${verified} of ${published} published interactions"
+            exit 1
+          fi
+      - name: Upload the verification report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pact-verification-report
+          path: services/karyo-app/build/reports/tests/test/
+          retention-days: 7
+      - name: Stop the Pact Broker
+        if: always()
+        run: docker rm -f pact-broker || true

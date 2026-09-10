@@ -1,0 +1,48 @@
+name: Documentation problem
+description: A document is wrong, contradicts another, is out of date, or cannot be reached.
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Documentation defects are product defects: warehouses are configured and deployed from
+        these pages. Inaccurate guidance is worth reporting even when the software is right.
+  - type: input
+    id: page
+    attributes:
+      label: The document
+      description: Its path in this repository.
+      placeholder: docs/functional/picking.md
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of problem
+      options:
+        - "Wrong - it states something that is not true of the code"
+        - "Contradiction - two documents disagree"
+        - "Stale - it describes behaviour that has since changed"
+        - "Unreachable - correct, but nothing leads to it from where a reader starts"
+        - "Broken link or heading anchor"
+        - "Missing - no document covers this at all"
+    validations:
+      required: true
+  - type: textarea
+    id: detail
+    attributes:
+      label: What it says, and what is actually true
+      description: >-
+        Quote the passage, then name the source of truth - the file, command or test output that
+        contradicts it. A document losing to the code is the normal outcome, but the source has to
+        be named for the fix to be checkable.
+    validations:
+      required: true
+  - type: textarea
+    id: journey
+    attributes:
+      label: Where you started and what you were trying to do
+      description: >-
+        For an unreachable page especially: the entry point you used and the route you expected.
+    validations:
+      required: false

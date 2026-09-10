@@ -1,0 +1,39 @@
+name: Question
+description: The documentation did not answer something you need to know about Karyo.
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Most questions already have an answer in docs/README.md, which maps every document. If you
+        found the answer there but it was hard to find, a documentation problem report helps the
+        next reader more than a question does.
+  - type: textarea
+    id: goal
+    attributes:
+      label: What you are trying to do
+      description: The task or decision behind the question, in warehouse or deployment terms.
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+    validations:
+      required: true
+  - type: textarea
+    id: read
+    attributes:
+      label: What you have already read
+      description: The documents you checked, so the answer can say what they left out.
+    validations:
+      required: false
+  - type: checkboxes
+    id: hygiene
+    attributes:
+      label: Before you submit
+      options:
+        - label: This is not a security vulnerability report.
+          required: true
+        - label: I removed credentials, licence tokens and customer data from this question.
+          required: true

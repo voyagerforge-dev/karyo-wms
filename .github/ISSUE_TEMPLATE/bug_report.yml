@@ -1,0 +1,110 @@
+name: Bug report
+description: Karyo did something wrong, and you can describe how to reproduce it.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Do not report a suspected security vulnerability here; use the private route in
+        SECURITY.md. Remove credentials, licence tokens, customer records and real client values
+        from everything you paste below. A clear report of what happened is more useful than a
+        diagnosis: leave room for the cause to turn out to be configuration, an unsupported
+        requirement, or a defect.
+  - type: input
+    id: version
+    attributes:
+      label: Karyo version
+      description: The release tag or commit you are running.
+      placeholder: v1.0.0
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where did it happen
+      options:
+        - Desktop console
+        - Floor app
+        - Backend API
+        - Build, deployment or start-up
+        - Documentation
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: How is the stack deployed
+      options:
+        - Compose with Docker
+        - Compose with Podman
+        - Local development mode
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: engines
+    attributes:
+      label: Commercial engines
+      description: >-
+        Whether the image you ran contained any of the separately licensed engines. A defect that
+        only appears with an engine present is a different defect.
+      options:
+        - None - the free build from this repository
+        - One or more commercial engines were present
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: >-
+        The exact screen, request or command, and the warehouse data it acted on. Synthetic data is
+        fine and preferred. If you could not reproduce it, say so and describe what you saw instead.
+      placeholder: |
+        1. Sign in as a user holding OPERATOR.
+        2. Open the work inbox on the floor app.
+        3. Claim the first pick task.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead
+      description: Include the error message, the HTTP status, or the wrong quantity or state.
+    validations:
+      required: true
+  - type: input
+    id: identity
+    attributes:
+      label: Role and owner scope
+      description: >-
+        The operation role, the principal kind (OPS or OWNER) and the goods owner involved, if you
+        know them. Role and principal kind are independent.
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log lines or test output
+      description: >-
+        The lines around the failure. For test output, paste the executed, failed and skipped
+        counts as reported. This is rendered as a code block, so no backticks are needed.
+      render: text
+    validations:
+      required: false
+  - type: checkboxes
+    id: hygiene
+    attributes:
+      label: Before you submit
+      options:
+        - label: This is not a security vulnerability report.
+          required: true
+        - label: I removed credentials, licence tokens and customer data from this report.
+          required: true

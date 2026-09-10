@@ -1,0 +1,28 @@
+Karyo WMS
+Copyright 2026 Yashraj Padhi
+
+Karyo WMS achieves behavioral parity with the myWMS warehouse management
+system (GPL-3.0-or-later, Copyright LinogistiX GmbH / Matthias Krane) as an
+independent implementation. No myWMS source code is included in, linked by,
+or distributed with this software.
+
+Karyo WMS is licensed under the Apache License, Version 2.0, as stated in
+LICENSE, except for the nine commercial modules named below, which that
+license does not cover. They are proprietary, licensed separately under the
+Karyo WMS Commercial Modules License, and not part of the Karyo WMS source
+repository: a build of that repository alone contains none of them. A build
+or container image that does contain any of them carries each one's own
+license file; a container image carries them under /app/commercial-licenses/.
+
+    karyo-cartonization-core
+    karyo-crossdock-core
+    karyo-doctemplates-core
+    karyo-forecasting-core
+    karyo-monitors-core
+    karyo-simulation-core
+    karyo-slotting-core
+    karyo-streaming-core
+    karyo-wave-core
+
+Third-party materials remain under the licenses listed in
+THIRD-PARTY-NOTICES.

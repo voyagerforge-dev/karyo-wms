@@ -1,0 +1,25 @@
+**/node_modules
+**/dist
+**/.venv
+.git
+mywms
+# ^ defensive only. Karyo is an independent implementation and no myWMS source is in this
+# repository (see NOTICE); this entry exists so a stray local copy can never enter an image
+# build context.
+docs
+
+# Local-only operator files. No Dockerfile COPYs any of them and none may enter a build context.
+# This is the ONLY ignore file that applies to every image built here, because Docker and Podman
+# read `.dockerignore` from the CONTEXT ROOT and every image in this repository is built with the
+# repository root as its context - a per-directory one beside a Dockerfile is simply not consulted.
+#
+# Do NOT add `**/build` here: `infrastructure/docker/Dockerfile.service` copies
+# `services/karyo-app/build/quarkus-app/` out of this same context.
+scripts/.env.prod*
+scripts/.license-signing-key
+# The last three belong to the commercial delivery half and never exist in a checkout of this
+# repository. They stay because the customer image is built from this context too, and an
+# entry that matches nothing costs nothing.
+distribution/.env
+distribution/config
+distribution/catalog.json

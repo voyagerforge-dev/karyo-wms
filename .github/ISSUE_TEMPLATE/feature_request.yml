@@ -1,0 +1,51 @@
+name: Feature request
+description: Karyo cannot perform a warehouse operation you need.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Describe the warehouse operation and why the current behaviour blocks it, rather than the
+        implementation you have in mind. The documents under docs/functional/ state what Karyo does
+        today; if your request changes one of those behaviours, say so.
+  - type: textarea
+    id: operation
+    attributes:
+      label: The warehouse operation you need to perform
+      description: Who does it, when in the day, and what the goods and paperwork look like.
+    validations:
+      required: true
+  - type: textarea
+    id: blocked
+    attributes:
+      label: How the current behaviour blocks it
+      description: >-
+        What you tried in Karyo today and where it stopped. Name the screen, the API or the
+        configuration you expected to cover it.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you considered instead
+      description: >-
+        Configuration, an existing strategy, an extension against a published -api seam, or an
+        integration. If one of them already comes close, say what it does not cover.
+    validations:
+      required: true
+  - type: textarea
+    id: contract
+    attributes:
+      label: Contract and compatibility
+      description: >-
+        Would this need a new API, SPI or event payload, a migration, or a change to an existing
+        contract? Say which existing user of that contract would have to change.
+    validations:
+      required: false
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Your current workaround
+      description: What the warehouse does instead today, and what that costs.
+    validations:
+      required: false

@@ -1,0 +1,47 @@
+# CODEOWNERS - who reviews what in voyagerforge-dev/karyo-wms
+#
+# GitHub honours an entry only when the named account has write access to this repository.
+# Every entry below names @loom-loki, the maintainer. The roles the documents talk about - the
+# maintainer of a change, whoever cuts a release - are held by that account today, so this file is
+# deliberately thin: inventing a handle per role would produce entries GitHub silently ignores and
+# reviewers who do not exist. When more maintainers hold write access, split the ownership here
+# and delete this paragraph.
+#
+# An entry requests a reviewer. Whether a review is required before merging is a branch-protection
+# setting, not something this file decides.
+
+# Default owner for everything in the repository.
+*                                                        @loom-loki
+
+# ---------------------------------------------------------------------------
+# Called out because a change here changes what an existing database accepts, what a deployment
+# trusts, or where the free product ends. Ownership resolves to the same account today; the value
+# of these lines is that a diff touching them is visibly a boundary change.
+# ---------------------------------------------------------------------------
+
+# Applied migrations are immutable, comments included. A forward migration is the only edit.
+/services/karyo-app/src/main/resources/db/migration/     @loom-loki
+
+# The commercial overlay and the entitlement gate. docs/architecture/commercial-boundary.md.
+/settings.gradle.kts                                     @loom-loki
+/services/karyo-app/build.gradle.kts                     @loom-loki
+/libs/karyo-license/                                     @loom-loki
+
+# Identity and deployment: realm definitions, the Compose stack, the deploy scripts.
+/infrastructure/                                         @loom-loki
+/scripts/                                                @loom-loki
+
+# CI and the build conventions every module applies.
+/.github/                                                @loom-loki
+/buildSrc/                                               @loom-loki
+/gradle/                                                 @loom-loki
+/build.gradle.kts                                        @loom-loki
+/config/                                                 @loom-loki
+
+# Legal files.
+/LICENSE                                                 @loom-loki
+/NOTICE                                                  @loom-loki
+/THIRD-PARTY-NOTICES.md                                  @loom-loki
+
+# Decision records. A change here changes a decision, not only its wording.
+/docs/architecture/decisions/                            @loom-loki

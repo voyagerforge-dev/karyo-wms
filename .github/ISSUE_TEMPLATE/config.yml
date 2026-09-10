@@ -1,0 +1,16 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/voyagerforge-dev/karyo-wms/blob/main/SECURITY.md
+    about: >-
+      Never open a public issue for a suspected vulnerability. The security policy gives the
+      private reporting route and what to include.
+  - name: Find the document that answers your question
+    url: https://github.com/voyagerforge-dev/karyo-wms/blob/main/docs/README.md
+    about: >-
+      Every document, one line each: the user guide, what Karyo does in a warehouse,
+      configuration, integration, operations and the decision records.
+  - name: Using an installed Karyo
+    url: https://github.com/voyagerforge-dev/karyo-wms/blob/main/docs/user-guide/README.md
+    about: >-
+      Receiving, picking, packing, counting and administration, task by task and screen by screen.
