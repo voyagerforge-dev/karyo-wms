@@ -88,6 +88,7 @@ not only the exit status. One failed Quarkus boot can skip most of the backend s
 QUARKUS_HTTP_TEST_PORT=0 ./gradlew test        # needs a container runtime for Dev Services
 ./gradlew detekt
 ./scripts/check-image-reproducibility.sh
+./scripts/scan-image.sh                        # image and dependency changes; needs Podman
 
 (cd frontend/web && npm ci && npm run lint && npm test && npm run build)
 (cd frontend/mobile && npm ci && npm run lint && npm test && npm run build)

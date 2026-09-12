@@ -15,7 +15,7 @@ Derived from `infrastructure/docker/Dockerfile.service`, `infrastructure/docker/
 
 The deploy script tags them `karyo/karyo-app:latest` and `karyo/nginx:latest` unless told
 otherwise (`scripts/deploy-server.sh:522-524`). CI tags them `karyo-app:<commit>` and
-`karyo-nginx:<commit>` and publishes neither (`.github/workflows/ci.yml:174-188`). No registry
+`karyo-nginx:<commit>` and publishes neither (`.github/workflows/ci.yml:174-202`). No registry
 receives an image from this repository: whoever runs Karyo builds its images from source (see
 [building](building.md)). An image of the full product is built from these same Dockerfiles with a
 commercial checkout present, and is delivered outside this repository.
@@ -127,15 +127,23 @@ host, where the catch-up freezes at whatever base was last pulled.
 
 ## Scanning an image
 
-`scripts/scan-image.sh` builds the application fast-jar and image, exports the image, and runs
-Trivy from its official container filtered to CRITICAL and HIGH with `--exit-code 1`
-(`scan-image.sh:58-76`). It needs Podman and a JDK. The `:ro,Z` bind mount it uses is
-load-bearing on an SELinux-enforcing host, where a bare `:ro` is denied inside the scanning
-container with a message that reads like a file-permission problem (`scan-image.sh:27-30`).
+CI's `scan` job runs Trivy on the application image `package` just built, filtered to CRITICAL
+and HIGH with `--exit-code 1` (`.github/workflows/ci.yml:304-344`). It uses the same triggers as
+the rest of the workflow - push to `main`, pull request against `main`, manual dispatch - so a
+finding fails the pull request and cannot merge green. GitHub-hosted jobs do not share an image
+store, so `package` saves the image and uploads it as a one-day workflow artefact
+(`ci.yml:185-197`) and `scan` downloads that artefact rather than rebuilding.
 
-Operators run it by hand; nothing in CI scans an image. Its header describes it as a local
-reproduction of a CI scan job, and this workflow has none (`scan-image.sh:4-14`). Whether the
-current image passes it is not recorded.
+`scripts/scan-image.sh` is the local reproduction of that gate: it builds the application
+fast-jar and image, exports the image, and runs Trivy from its official container under the
+same severity filter and `--exit-code 1` (`scan-image.sh:4-14`, `:58-104`). It needs Podman and
+a JDK. The `:ro,Z` bind mount it uses is load-bearing on an SELinux-enforcing host, where a
+bare `:ro` is denied inside the scanning container with a message that reads like a
+file-permission problem (`scan-image.sh:27-30`); CI keeps the same mount options so the two
+stay one gate.
+
+The scan covers the application image only, not nginx. Whether a given tree currently passes
+is the `scan` job on that commit.
 
 ## Reproducibility
 

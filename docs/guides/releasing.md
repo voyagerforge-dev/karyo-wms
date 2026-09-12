@@ -13,7 +13,7 @@ else is published: there is no release automation, no image registry and no arte
 - **A GitHub release for the tag**, whose notes say what changed for someone running Karyo.
 
 A release is not an image. CI builds both images on every push to `main` and publishes neither
-(`.github/workflows/ci.yml:152-188`). An installation builds its own images from the tagged source
+(`.github/workflows/ci.yml:152-202`). An installation builds its own images from the tagged source
 ([Deploying Karyo](../operations/deploying.md)), and a release deploys nothing.
 
 **There is no changelog file, by decision.** Release notes live in the GitHub release for each tag

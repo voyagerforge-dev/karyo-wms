@@ -15,7 +15,7 @@ checks on every change.
 
 ## The delivery pipeline
 
-One workflow, GitHub-hosted runners, seven jobs, and no destination.
+One workflow, GitHub-hosted runners, eight jobs, and no destination.
 
 ### Where it runs
 
@@ -33,14 +33,17 @@ Its token is read-only (`:10-11`), and a newer run on the same ref cancels the o
 | `frontend` | - | `frontend/web`: install, lint, vitest, build; then the end-to-end helper tests and collection of every Playwright spec, with no live stack (`ci.yml:65-100`) | yes, except lint |
 | `mobile` | - | `frontend/mobile`: install, lint, vitest, build (`ci.yml:102-126`) | yes |
 | `quality` | `compile` | `./gradlew detekt` (`ci.yml:128-150`) | yes |
-| `pact-verify` | `compile` | an ephemeral Pact Broker, the console's four consumer pacts generated with Vitest and published to it, the four Pact provider tests run against it, and a check that every published interaction was verified (`ci.yml:194-289`) | yes |
-| `package` | all six | the image-determinism audit, the production `quarkusBuild`, and both images built with `SOURCE_DATE_EPOCH=0` (`ci.yml:152-188`) | yes |
+| `pact-verify` | `compile` | an ephemeral Pact Broker, the console's four consumer pacts generated with Vitest and published to it, the four Pact provider tests run against it, and a check that every published interaction was verified (`ci.yml:208-303`) | yes |
+| `package` | all six | the image-determinism audit, the production `quarkusBuild`, both images built with `SOURCE_DATE_EPOCH=0`, and the application image saved as a workflow artefact for `scan` (`ci.yml:152-202`) | yes |
+| `scan` | `package` | Trivy CRITICAL+HIGH on the application image, `--exit-code 1` (`ci.yml:304-344`) | yes |
 
 `quality` and `pact-verify` depend on `compile` alone rather than on `test`, so that one failing
 test does not hide every static-analysis finding or broken contract behind it. `package` names
-every other job, so no image is built from a tree whose tests, contracts, analysis or front-end
-builds failed. The test, quality and Pact verification reports are uploaded as workflow artefacts
-and kept for seven days.
+every other job except `scan`, so no image is built from a tree whose tests, contracts, analysis
+or front-end builds failed. `scan` names `package`, so it always scans the image that job just
+built. The test, quality and Pact verification reports are uploaded as workflow artefacts and
+kept for seven days; the application image artefact is kept for one day and exists only so
+`scan` can run on a fresh GitHub-hosted VM.
 
 ### The one non-blocking exemption
 
@@ -58,8 +61,9 @@ pre-existing findings (`ci.yml:81-84`). Everything else blocks, including the fl
 - **Gradle's `check` is never run**, so the jar legal-file verification wired into it
   (`build.gradle.kts:106`) runs in no job; see [building](building.md#licence-notices-packaged-and-verified).
 - **OWASP dependency-check is not run**, although every Kotlin module applies it
-  (`build.gradle.kts:239-246`).
-- **No image is scanned.** `scripts/scan-image.sh` is run by hand; see
+  (`build.gradle.kts:243-250`).
+- **Only the application image is scanned, and only at CRITICAL and HIGH.** The nginx image is
+  not scanned. `scripts/scan-image.sh` is the local reproduction of the `scan` job; see
   [container images](container-images.md#scanning-an-image).
 - **Reproducibility is audited, not proved.** The audit reads the build commands; the double build
   that proves identical content gives an identical image is run by hand (see
@@ -74,7 +78,7 @@ pre-existing findings (`ci.yml:81-84`). Everything else blocks, including the fl
 ### Where the images go
 
 Nowhere. The `package` job builds both images and publishes nothing, and its last step says so out
-loud rather than passing silently (`ci.yml:185-188`). Whoever runs Karyo builds its images from
+loud rather than passing silently (`ci.yml:199-202`). Whoever runs Karyo builds its images from
 source with the [deploy script](deploying.md); commercial images are built and delivered outside
 this repository. How a release is cut is in [releasing](../guides/releasing.md).
 

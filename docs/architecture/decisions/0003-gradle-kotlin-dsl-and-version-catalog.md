@@ -27,10 +27,10 @@ every jar, security floors on transitive dependencies, static analysis and test 
   (`build.gradle.kts:28-30`); jar legal-file verification wired into `check`
   (`build.gradle.kts:95-106`); security floors for transitive dependencies
   (`build.gradle.kts:109-121` and the `securityFloor` calls that follow); Detekt
-  (`build.gradle.kts:232-235`); OWASP dependency-check (`build.gradle.kts:239-243`); and a
+  (`build.gradle.kts:236-241`); OWASP dependency-check (`build.gradle.kts:243-249`); and a
   test-integrity gate that fails the build when a project with test sources has no deterministic
   test task, or when that task is disabled, skipped, a dry run or set to ignore failures
-  (`build.gradle.kts:249-262`, `build.gradle.kts:264`).
+  (`build.gradle.kts:253-266`, `build.gradle.kts:268`).
 - Parallel execution and the build cache are on (`gradle.properties:1-3`).
 - Optional modules are selected by properties, not by editing build files. The extension example
   is built as a module but enters the application only with `-PkaryoInventoryExample=true`
@@ -71,7 +71,7 @@ every jar, security floors on transitive dependencies, static analysis and test 
 - `buildSrc/src/main/kotlin/karyo.quarkus-service.gradle.kts:1-22` - the Quarkus convention plugin
 - `buildSrc/build.gradle.kts:10-16` - the plugin versions, repeated from the catalog
 - `build.gradle.kts:28-30`, `build.gradle.kts:95-106`, `build.gradle.kts:109-121`,
-  `build.gradle.kts:232-243`, `build.gradle.kts:249-262` - the build-wide version and gates
+  `build.gradle.kts:236-249`, `build.gradle.kts:253-266` - the build-wide version and gates
 - `gradle.properties:1-3` - parallel execution and caching
 - [Building](../../operations/building.md)
 

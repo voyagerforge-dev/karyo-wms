@@ -182,6 +182,20 @@ jobs:
           SOURCE_DATE_EPOCH=0 docker build \
             -f infrastructure/docker/Dockerfile.nginx \
             -t "karyo-nginx:${{ github.sha }}" .
+      # The scan job runs on a fresh GitHub-hosted VM and cannot see this job's
+      # local image store, so the application image travels as a workflow artefact.
+      # That is not a registry publish: the artefact is internal, retained one day,
+      # and is the only way `scan` can gate a pull request while publishing stays off.
+      - name: Save the application image for scanning
+        run: docker save -o /tmp/karyo-app-image.tar "karyo-app:${{ github.sha }}"
+      - name: Upload the application image
+        uses: actions/upload-artifact@v4
+        with:
+          name: karyo-app-image
+          path: /tmp/karyo-app-image.tar
+          retention-days: 1
+          if-no-files-found: error
+
       - name: Images are built, not published
         run: >-
           echo 'Both images built successfully. This workflow publishes nothing:
@@ -287,3 +301,44 @@ jobs:
       - name: Stop the Pact Broker
         if: always()
         run: docker rm -f pact-broker || true
+
+  # Trivy scans the application image the Package job built. On GitHub-hosted runners each
+  # job is a fresh VM, so the image travels as a workflow artefact rather than sitting in a
+  # shared local store (the coupling a self-hosted runner can use).
+  #
+  # Unlike the private predecessor, this job is not gated to default-branch push: it uses
+  # the same triggers as the rest of this workflow (push to main, pull_request against
+  # main, workflow_dispatch). A CRITICAL or HIGH finding therefore fails the pull request
+  # and cannot merge green. The gate is the same as scripts/scan-image.sh: severity
+  # CRITICAL,HIGH and --exit-code 1, run from Trivy's official container rather than
+  # aquasecurity/trivy-action.
+  scan:
+    name: Scan (karyo-app)
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Download the application image
+        uses: actions/download-artifact@v4
+        with:
+          name: karyo-app-image
+          path: /tmp
+      - name: Run Trivy vulnerability scanner
+        # `:ro,Z`, not `:ro`. The local script and an SELinux-enforcing host need the
+        # MCS relabel; on ubuntu-latest it is a no-op. Kept identical so this job and
+        # scripts/scan-image.sh stay the same gate.
+        run: |
+          set -euo pipefail
+          test -f /tmp/karyo-app-image.tar || {
+            echo "::error::application image artefact missing at /tmp/karyo-app-image.tar"
+            ls -la /tmp
+            exit 1
+          }
+          docker run --rm \
+            -v /tmp/karyo-app-image.tar:/scan/image.tar:ro,Z \
+            -v trivy-db:/root/.cache/trivy \
+            docker.io/aquasec/trivy:latest image \
+              --input /scan/image.tar \
+              --severity CRITICAL,HIGH \
+              --exit-code 1 \
+              --format table

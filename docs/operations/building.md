@@ -95,18 +95,18 @@ Two mechanisms, and the file explains why:
 - **`resolutionStrategy.eachDependency`** for anything the Quarkus BOM manages. Every module
   applies that BOM with `enforcedPlatform`, whose forced versions beat a plain constraint outright
   and do so silently, so netty, Jackson, micrometer and the PostgreSQL driver go through a
-  `securityFloor` helper that runs after conflict resolution (`build.gradle.kts:145-229`).
+  `securityFloor` helper that runs after conflict resolution (`build.gradle.kts:145-233`).
 
 Two exclusions inside that block are worth knowing because they are the shape of mistake a
 family-wide floor invites. `netty-tcnative` versions on its own 2.0.x line inside the `io.netty`
 group, and `jackson-annotations` ships on a minor-only cadence, so a group-wide floor would demand
 versions that have never been published and fail the whole configuration to resolve
-(`build.gradle.kts:177-197`). Neither artefact is on the classpath today; both guards exist so that
+(`build.gradle.kts:182-201`). Neither artefact is on the classpath today; both guards exist so that
 adding one later fails no build.
 
 `securityFloor` compares the numeric runs in a version left to right and ignores qualifiers, so
 `4.1.121.Final < 4.1.136.Final` while `4.2.13.Final` is not below `4.1.136.Final`
-(`build.gradle.kts:326-356`). Its own KDoc bounds it: correct for every coordinate that uses it,
+(`build.gradle.kts:330-360`). Its own KDoc bounds it: correct for every coordinate that uses it,
 wrong for a pre-release line, and not to be reached for there.
 
 Each entry names the CVEs it clears and how to retire it - delete it, run
@@ -116,7 +116,7 @@ best-documented part of the build and it is worth keeping that way.
 ## Static analysis
 
 Detekt is applied to every Kotlin module with a shared configuration
-(`build.gradle.kts:231-238`), and existing findings are held in per-module
+(`build.gradle.kts:235-242`), and existing findings are held in per-module
 `detekt-baseline.xml` files so that they do not fail the build while new ones do. CI's `quality`
 job runs `./gradlew detekt` and blocks on it (`.github/workflows/ci.yml:128-150`). With a commercial
 checkout present it also lints the grafted commercial suites, which it would not find on its own:
@@ -133,7 +133,7 @@ step's name or output says which rules did not run, and the baselines were captu
 reduced set.
 
 OWASP dependency-check is applied alongside it, failing at CVSS 7.0 and reading an optional
-`NVD_API_KEY` (`build.gradle.kts:239-246`). No CI job runs it; it is run by hand, and without an
+`NVD_API_KEY` (`build.gradle.kts:243-250`). No CI job runs it; it is run by hand, and without an
 API key the NVD service is heavily rate-limited.
 
 ## The deterministic-test contract
@@ -141,12 +141,12 @@ API key the NVD service is heavily rate-limited.
 `build.gradle.kts:13-26` reads `config/test-runner-contracts.json` at configuration time and
 refuses to configure at all unless the Gradle contract rejects test filters and requires JUnit
 Platform. Two later hooks enforce it: `gradle.projectsEvaluated` fails if a project with test
-sources has no test task (`build.gradle.kts:249-262`), and `gradle.taskGraph.whenReady` walks
+sources has no test task (`build.gradle.kts:253-266`), and `gradle.taskGraph.whenReady` walks
 every `test` task in the graph and fails on any of the ways to run fewer tests than the source set
 contains - disabled, conditionally skipped, dry run, ignoring failures, include or exclude patterns
 at either the task or the filter level, engine or tag filters, omitted sources, or a
 `testClassesDirs` that does not equal the complete test source-set output
-(`build.gradle.kts:264-323`).
+(`build.gradle.kts:268-327`).
 
 This is a delivery control, not a testing one. It exists so that a green pipeline cannot be
 produced by narrowing what the suite runs, which is the failure mode a release gate is most
