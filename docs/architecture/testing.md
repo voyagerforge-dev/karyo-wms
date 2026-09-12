@@ -91,7 +91,7 @@ The Gradle test task forwards `pact.broker.url` into the forked test JVM
 (`services/karyo-app/build.gradle.kts:158-170`). A `-D` on the Gradle command line does not reach a
 forked Test JVM, so without the forwarding a named broker would never enable the tests.
 
-The four therefore run in one place: CI's `pact-verify` job (`.github/workflows/ci.yml:194-289`).
+The four therefore run in one place: CI's `pact-verify` job (`.github/workflows/ci.yml:208-303`).
 It starts an ephemeral broker, generates the console's consumer pacts with Vitest, publishes them
 and fails unless there are exactly four, runs the provider tests against the broker, and fails
 unless the number of interactions verified equals the number published. `package` waits on it. In
