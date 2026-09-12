@@ -171,17 +171,21 @@ subprojects {
             when {
                 // 20 HIGH across netty-codec, -codec-dns, -codec-haproxy, -codec-http,
                 // -codec-http2, -handler and -resolver-dns, originally resolved at
-                // 4.1.121.Final. 4.1.136.Final is the highest floor those findings ask for
-                // (CVE-2026-55831/55833/56745/56819/59901/55851). A newer platform's
-                // 4.2.x line remains untouched by this upward-only floor.
+                // 4.1.121.Final, whose highest ask was 4.1.136.Final
+                // (CVE-2026-55831/55833/56745/56819/59901/55851); then CRITICAL
+                // CVE-2026-75595 (GHSA-c4c3-7fpv-j4q5) on netty-handler 4.1.136.Final,
+                // patched at 4.1.137.Final on 4.1.x and 4.2.17.Final on 4.2.x. So
+                // 4.1.137.Final is the highest floor these findings ask for; this
+                // upward-only floor lifts the 4.1 line the Quarkus BOM currently ships
+                // and leaves a newer platform's 4.2.x line untouched.
                 //
                 // netty-tcnative is excluded on purpose: it lives in the io.netty group but
                 // versions independently (2.0.x), so a group-wide floor would demand a
-                // netty-tcnative 4.1.136 that has never existed. It is not on the classpath
+                // netty-tcnative 4.1.137 that has never existed. It is not on the classpath
                 // today; the guard is here so that adding it later fails no build.
                 requested.group == "io.netty" &&
                     !requested.name.startsWith("netty-tcnative") ->
-                    securityFloor("4.1.136.Final")
+                    securityFloor("4.1.137.Final")
 
                 // jackson-annotations is NOT on the 2.21.4 line and must be floored
                 // separately. Jackson releases it on a minor-only cadence - 2.19.x, then
