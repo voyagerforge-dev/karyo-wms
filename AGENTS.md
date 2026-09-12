@@ -34,6 +34,88 @@ running local session is in [developer onboarding](docs/guides/developer-onboard
   [ADR 0007](docs/architecture/decisions/0007-cross-module-references-by-id.md) its data half: other
   modules' rows are referenced by id, never by foreign key.
 
+## Coupling checklist
+
+Cross-layer couplings an agent will miss from the file they opened. The module graph is in
+[modules and boundaries](docs/architecture/modules-and-boundaries.md).
+
+- **New Gradle module (four files, not one):** `settings.gradle.kts` `include(...)`; aggregator
+  `implementation(project(...))` in `services/karyo-app/build.gradle.kts` (cores are libraries, not
+  deployables; also the explicit Quarkus extension union there); `META-INF/beans.xml` for CDI
+  discovery; and `quarkus.flyway.locations` in
+  `services/karyo-app/src/main/resources/application.yaml` if you add a new `db/migration/<dir>`.
+  Dropping one of those is silent: the project compiles, the JAR is invisible at runtime, or
+  Flyway never runs. `buildSrc` `allOpen` must keep `@Path`, `@ApplicationScoped`,
+  `@RequestScoped`, `@Entity`, `@MappedSuperclass`, `@QuarkusTest`.
+- **Tests live in the aggregator.** Backend tests are almost all under
+  `services/karyo-app/src/test`, not beside the core. Changing a core without the karyo-app test is
+  how it ships untested. CI still runs `./gradlew test` across every module.
+- **SPI implemented in a foreign core.** Cores must not depend on foreign cores. The workaround is
+  an SPI in `*-api` implemented by another domain's core, wired by CDI in the aggregator. Changing
+  the interface without the foreign implementation (or its karyo-app test) is the silent break.
+  Examples: `ReservationRefMover` (inventory-api; orders-core and fulfillment-core),
+  `TransportDemandLookup` (layout-api; tasks-core), `ReplenishmentSourceSelector` (inventory-api;
+  replenishment-core consumes it).
+- **Frontend contract surfaces are not the REST resource.** A DTO field change needs the TS type
+  and the page test (`frontend/web/src/types/`, matching page). A new page needs
+  `frontend/web/src/config/navigation.ts`, `frontend/web/src/routes/router.tsx` and
+  `frontend/web/src/components/command/command-palette.tsx` together, or it 404s from some entry
+  points.
+- **Two Keycloak realms, not one.** `infrastructure/keycloak/karyo-realm.json` (dev) and
+  `karyo-realm-prod.json` (prod). Claim mappers for `principal_kind` and roles must stay aligned on
+  both token-issuing clients. `--import-realm` skips an existing realm, so a JSON-only edit does
+  not migrate a live Keycloak.
+- **Deploy env example is load-bearing.** New knobs belong in `scripts/.env.prod.example` and
+  `SystemPropertyCatalog`, not only `application.yaml`. Runtime resolution is client row -> SYS
+  row -> config -> catalog.
+- **Image-build sites are a fixed list** in `scripts/check-image-reproducibility.sh` `BUILD_SITES`
+  (today: `.github/workflows/ci.yml`, `scripts/deploy-server.sh`, `scripts/scan-image.sh`). A
+  fifth `docker build -f infrastructure/docker/Dockerfile.service` in a new file is invisible to
+  the PR audit. The audit checks `--timestamp 0` / `SOURCE_DATE_EPOCH=0` on those known sites, not
+  tree-wide.
+- **Node 22 is three places.** `frontend/web/package.json` `engines.node` (>= 22), both builders in
+  `infrastructure/docker/Dockerfile.nginx` (`node:22-alpine`), and the frontend/mobile CI jobs.
+  Mobile declares no `engines`.
+- **Vendor public key has one home:**
+  `libs/karyo-license/src/main/resources/com/karyo/license/vendor-public-key.txt`, read by
+  `VendorKey`. Do not duplicate the bytes.
+- **Publication / commercial boundary.** This tree is the public product; there is no
+  `publication-policy.json` or classify job. A new path is public by landing here. Commercial
+  engines live outside and plug in through `-api` SPIs
+  ([the commercial boundary](docs/architecture/commercial-boundary.md)). Do not add commercial
+  behaviour to a free module.
+
+Pact consumer specs vs provider tests barely co-change; the coupling is the `pact-verify` job.
+`config/test-runner-contracts.json` is the include/exclude owner for Gradle, Vitest and Playwright.
+
+## Gate map
+
+Executable: [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Narrative:
+[the delivery pipeline](docs/operations/README.md#the-delivery-pipeline). Merge:
+[CONTRIBUTING.md](CONTRIBUTING.md#review-and-merge).
+
+One workflow, GitHub-hosted `ubuntu-latest`, eight jobs. Triggers: push to `main`, pull request
+against `main`, `workflow_dispatch`. `package` waits on every other job except `scan`; `scan`
+waits on `package` and runs on the same triggers, including pull requests.
+
+| Job | Blocks a PR? | What it actually guards |
+|---|---|---|
+| `compile` | **blocks** | `compileKotlin compileTestKotlin`. Does not run `verifyJarLegalFiles` (that hangs off `check`, which CI never runs). |
+| `test` | **blocks** | `./gradlew test` (every module). Pact provider tests are skipped here; they are not proof. |
+| `frontend` | **blocks except lint** | vitest, production build, Playwright `--list` and helper tests. Web lint is `continue-on-error: true` (the only named exemption). Does not execute E2E. |
+| `mobile` | **blocks** | lint, vitest, build. Lint is clean and blocking, unlike web. |
+| `quality` | **blocks** | `./gradlew detekt` only. New findings fail; baseline debt does not. No image-audit, no OWASP. |
+| `pact-verify` | **blocks** | ephemeral broker, exactly four consumer pacts, provider tests, verified-interaction count equals published count. |
+| `package` | **blocks** | image-determinism **audit**, both images with `SOURCE_DATE_EPOCH=0`. Publishes nothing. Reproducibility is not proved (`--prove` is local). |
+| `scan` | **blocks** | Trivy CRITICAL+HIGH on the application image, `--exit-code 1`. Nginx image is not scanned. |
+
+What will not sink the PR job: web lint, live Playwright E2E, `./gradlew check` / jar legal-file
+verification, OWASP, image `--prove`, coverage percentages.
+
+Local `./gradlew test` is not Pact proof. Do not widen the web-lint exemption. CODEOWNERS
+requests `@loom-loki`; whether a red check or a review blocks merge is a repository setting, not
+the workflow.
+
 ## Maintaining this file
 
 Keep this file for knowledge useful to almost every future agent session in this project.
