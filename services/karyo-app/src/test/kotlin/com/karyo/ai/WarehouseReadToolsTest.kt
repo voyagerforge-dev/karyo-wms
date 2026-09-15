@@ -17,6 +17,7 @@ import com.karyo.reporting.service.OccupancyService
 import com.karyo.security.TenantContext
 import io.mockk.every
 import io.mockk.mockk
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -105,6 +106,29 @@ class WarehouseReadToolsTest {
         assertTrue(out.contains("Last 30 days"), "should include range label")
         assertTrue(out.contains("Inventory accuracy"), "should include tile label")
         assertTrue(out.contains("98.5%"), "should include tile value")
+    }
+
+    @Test
+    fun `getKpis says why an undefined KPI has no value instead of printing null`() {
+        val tiles = listOf(
+            KpiTile("accuracy", "Inventory accuracy", null, null, "up", emptyList()),
+            KpiTile("throughput", "Throughput", null, null, "up", emptyList()),
+            KpiTile("cycleTime", "Order cycle time", null, null, "up", emptyList()),
+            KpiTile("utilization", "Utilization", null, null, "up", emptyList()),
+        )
+        val resp = KpiDashboardResponse("30D", "Last 30 days", tiles, KpiChart(emptyList(), emptyList()))
+        every { kpis.build(eq(1L), any(), any()) } returns resp
+
+        assertEquals(
+            """
+            Last 30 days
+            Inventory accuracy: no counted lines in range
+            Throughput: no activity in range
+            Order cycle time: no orders shipped in range
+            Utilization: no storage locations
+            """.trimIndent(),
+            tools().getKpis("30D"),
+        )
     }
 
     @Test

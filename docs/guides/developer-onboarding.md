@@ -132,9 +132,9 @@ production realm has no human users at all.
 | `viewer` | `viewer` | `VIEWER` | OPS | 1 |
 | `tenant2-operator` | `operator` | `OPERATOR` | OWNER | 2 |
 
-Signing in as `admin` lands on the Operations Control dashboard. An empty warehouse is normal: the
-figures read zero until you create master data, which the
-[implementer guide](implementer-guide.md) walks through with synthetic data.
+Signing in as `admin` lands on the Operations Control dashboard. An empty warehouse is normal: each
+KPI shows a dash with a note such as *No storage locations* until you create master data, which
+the [implementer guide](implementer-guide.md) walks through with synthetic data.
 
 **Known defect, local only.** Through the Vite dev servers the Keycloak sign-in page renders without
 its styles and its "Show password" button does nothing. The dev servers route `/api` and `/auth`

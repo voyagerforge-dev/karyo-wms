@@ -19,7 +19,7 @@ vi.mock('@/features/sample-data/use-demo-enabled', () => ({
 
 const { OperationsControl } = await import('@/pages/home/ops/operations-control');
 
-// OperationsControl now renders SampleDataCard, which reads useSampleData() --
+// OperationsControl renders SampleDataCard, which reads useSampleData() --
 // it needs a SampleDataProvider (and the QueryClientProvider that provider
 // itself depends on) in the tree, same as the real AppShell wiring.
 function renderDashboard() {
@@ -40,76 +40,79 @@ function renderDashboard() {
 }
 
 const BASE_OPS_DATA: OpsData = {
-  kpis: [
-    {
-      label: 'Pick accuracy',
-      value: '99.2%',
-      points: '0,14 8,15 16,11 24,13 32,9 40,10 50,7 58,6',
-      tone: 'up',
-      deltaArrow: '▲',
-      deltaText: '0.3',
-      context: '',
-    },
-    {
-      label: 'Units / hr',
-      value: '142',
-      points: '0,17 8,14 16,15 24,11 32,12 40,9 50,7 58,8',
-      tone: 'up',
-      deltaArrow: '▲',
-      deltaText: '8',
-      context: '',
-    },
-    {
-      label: 'Dock-to-stock',
-      value: '38m',
-      points: '',
-      tone: 'up',
-      deltaArrow: '▼',
-      deltaText: '2m',
-      context: '',
-    },
-    {
-      label: 'Utilization',
-      value: '76%',
-      points: '',
-      tone: 'up',
-      deltaArrow: '▲',
-      deltaText: '',
-      context: '',
-    },
-  ],
-  throughput: {
-    bars: [
-      { label: 'Mon', pct: 67, isPeak: false },
-      { label: 'Tue', pct: 100, isPeak: true },
-      { label: 'Wed', pct: 50, isPeak: false },
+  kpis: {
+    status: 'ready',
+    data: [
+      {
+        label: 'Inventory accuracy',
+        value: '99.2%',
+        points: '0,14 8,15 16,11 24,13 32,9 40,10 50,7 58,6',
+        tone: 'up',
+        delta: { arrow: '▲', text: '0.3%' },
+        context: 'vs prior period',
+      },
+      {
+        label: 'Throughput',
+        value: '142/day',
+        points: '0,17 8,14 16,15 24,11 32,12 40,9 50,7 58,8',
+        tone: 'up',
+        delta: { arrow: '▲', text: '8/day' },
+        context: 'vs prior period',
+      },
+      {
+        label: 'Order cycle time',
+        value: '6.2h',
+        points: '',
+        tone: 'up',
+        delta: { arrow: '▼', text: '2.0h' },
+        context: 'vs prior period',
+      },
+      {
+        label: 'Utilization',
+        value: '76.0%',
+        points: '',
+        tone: 'up',
+        delta: null,
+        context: 'Live snapshot',
+      },
     ],
-    peakText: 'PEAK TUE 180',
-    avgText: 'AVG 130',
+  },
+  throughput: {
+    status: 'ready',
+    data: {
+      bars: [
+        { label: 'Mon', pct: 67, isPeak: false },
+        { label: 'Tue', pct: 100, isPeak: true },
+        { label: 'Wed', pct: 50, isPeak: false },
+      ],
+      peakText: 'PEAK 15 SEP 180',
+      avgText: 'AVG 130',
+    },
   },
   zone: {
-    cells: [
-      { color: 'rgb(var(--acc))', title: 'A · A-01 — occupied' },
-      { color: '#23201A', title: 'A · A-02 — empty' },
-      { color: '#FF6A45', title: 'B · B-01 — locked' },
-    ],
-    title: 'Zone occupancy',
-    sub: 'FACILITY 50% FULL',
-    badgeText: '1 LOCKED',
-    badgeTone: 'danger',
-    legendUnit: 'STATE',
-    legend: [
-      { color: 'rgb(var(--acc))', label: 'Occupied' },
-      { color: '#23201A', label: 'Empty' },
-      { color: '#FF6A45', label: 'Locked' },
-    ],
+    status: 'ready',
+    data: {
+      cells: [
+        { color: 'rgb(var(--acc))', title: 'A · A-01 — occupied' },
+        { color: '#23201A', title: 'A · A-02 — empty' },
+        { color: '#FF6A45', title: 'B · B-01 — locked' },
+      ],
+      title: 'Zone occupancy',
+      sub: 'FACILITY 50% FULL',
+      badgeText: '1 LOCKED',
+      badgeTone: 'danger',
+      legendUnit: 'STATE',
+      legend: [
+        { color: 'rgb(var(--acc))', label: 'Occupied' },
+        { color: '#23201A', label: 'Empty' },
+        { color: '#FF6A45', label: 'Locked' },
+      ],
+    },
   },
-  exceptions: [
-    { type: 'EXPIRY RISK', detail: 'lot 42 · 4 lots expiring', age: '2m', severity: 'danger' },
-  ],
-  monitorsEntitled: true,
-  monitorsLoading: false,
-  isLoading: false,
+  exceptions: {
+    status: 'ready',
+    data: [{ type: 'EXPIRY RISK', detail: 'lot 42 · 4 lots expiring', age: '2m', severity: 'danger' }],
+  },
 };
 
 describe('OperationsControl', () => {
@@ -122,10 +125,55 @@ describe('OperationsControl', () => {
   it('renders the 4 real KPI labels', () => {
     mockOpsData.mockReturnValue(BASE_OPS_DATA);
     renderDashboard();
-    expect(screen.getByText('Pick accuracy')).toBeInTheDocument();
-    expect(screen.getByText('Units / hr')).toBeInTheDocument();
-    expect(screen.getByText('Dock-to-stock')).toBeInTheDocument();
+    expect(screen.getByText('Inventory accuracy')).toBeInTheDocument();
+    expect(screen.getAllByText('Throughput').length).toBeGreaterThan(0);
+    expect(screen.getByText('Order cycle time')).toBeInTheDocument();
     expect(screen.getByText('Utilization')).toBeInTheDocument();
+  });
+
+  it('paints a delta arrow only for a KPI that has a delta', () => {
+    mockOpsData.mockReturnValue(BASE_OPS_DATA);
+    renderDashboard();
+    expect(screen.getByText('▲ 0.3%')).toBeInTheDocument();
+    expect(screen.getByText('▼ 2.0h')).toBeInTheDocument();
+    expect(screen.getByText('Live snapshot')).toBeInTheDocument();
+    // Utilization has no delta: exactly the three real arrows, no bare "▲" for the fourth cell.
+    expect(screen.getAllByText(/^[▲▼] /)).toHaveLength(3);
+  });
+
+  it('shows a placeholder and its note for an undefined KPI, never a zero', () => {
+    mockOpsData.mockReturnValue({
+      ...BASE_OPS_DATA,
+      kpis: {
+        status: 'ready',
+        data: [
+          { label: 'Inventory accuracy', value: null, points: '', tone: 'up', delta: null, context: 'No counted lines in range' },
+        ],
+      },
+    });
+    renderDashboard();
+    expect(screen.getByText('–')).toBeInTheDocument();
+    expect(screen.getByText('No counted lines in range')).toBeInTheDocument();
+    expect(screen.queryByText(/^[▲▼]/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/0\.0%/)).not.toBeInTheDocument();
+  });
+
+  it('paints a change that rounds to zero neutral, not in the tone of its raw direction', () => {
+    mockOpsData.mockReturnValue({
+      ...BASE_OPS_DATA,
+      kpis: {
+        status: 'ready',
+        data: [
+          { label: 'Inventory accuracy', value: '98.4%', points: '', tone: 'warning', delta: { arrow: '=', text: '0.0%' }, context: 'vs prior period' },
+          { label: 'Throughput', value: '100/day', points: '', tone: 'warning', delta: { arrow: '▼', text: '3/day' }, context: 'vs prior period' },
+        ],
+      },
+    });
+    renderDashboard();
+    const level = screen.getByText('= 0.0%');
+    expect(level).toHaveClass('text-muted-foreground');
+    expect(level).not.toHaveClass('text-warning-foreground');
+    expect(screen.getByText('▼ 3/day')).toHaveClass('text-warning-foreground');
   });
 
   it('renders throughput bars with no Shift toggle', () => {
@@ -153,23 +201,65 @@ describe('OperationsControl', () => {
   });
 
   it('shows a locked empty-state for exceptions when monitors is not entitled', () => {
-    mockOpsData.mockReturnValue({ ...BASE_OPS_DATA, exceptions: [], monitorsEntitled: false });
+    mockOpsData.mockReturnValue({ ...BASE_OPS_DATA, exceptions: { status: 'locked' } });
     renderDashboard();
     expect(screen.getByTestId('exceptions-locked')).toBeInTheDocument();
     expect(screen.queryByText('EXPIRY RISK')).not.toBeInTheDocument();
   });
 
-  it('shows neither the locked panel nor the empty state while monitors is still resolving', () => {
+  it('shows the quiet empty state when monitors is entitled and nothing is firing', () => {
+    mockOpsData.mockReturnValue({ ...BASE_OPS_DATA, exceptions: { status: 'ready', data: [] } });
+    renderDashboard();
+    expect(screen.getByText('No open exceptions.')).toBeInTheDocument();
+  });
+
+  it('says every panel is loading while its data is pending, and never claims an empty result', () => {
     mockOpsData.mockReturnValue({
-      ...BASE_OPS_DATA,
-      exceptions: [],
-      monitorsEntitled: false,
-      monitorsLoading: true,
+      kpis: { status: 'loading' },
+      throughput: { status: 'loading' },
+      zone: { status: 'loading' },
+      exceptions: { status: 'loading' },
     });
     renderDashboard();
+    expect(screen.getByTestId('kpi-strip-loading')).toBeInTheDocument();
+    expect(screen.getByTestId('throughput-loading')).toBeInTheDocument();
+    expect(screen.getByTestId('zone-loading')).toBeInTheDocument();
     expect(screen.getByTestId('exceptions-loading')).toBeInTheDocument();
     expect(screen.queryByTestId('exceptions-locked')).not.toBeInTheDocument();
+    expect(screen.queryByText(/no .* (yet|range)\.?/i)).not.toBeInTheDocument();
     expect(screen.queryByText('No open exceptions.')).not.toBeInTheDocument();
+  });
+
+  it('says a panel could not load when its request failed, instead of showing it empty', () => {
+    mockOpsData.mockReturnValue({
+      kpis: { status: 'error' },
+      throughput: { status: 'error' },
+      zone: { status: 'error' },
+      exceptions: { status: 'error' },
+    });
+    renderDashboard();
+    expect(screen.getByText('Could not load KPIs.')).toBeInTheDocument();
+    expect(screen.getByText('Could not load throughput.')).toBeInTheDocument();
+    expect(screen.getByText('Could not load occupancy.')).toBeInTheDocument();
+    expect(screen.getByText('Could not load exceptions.')).toBeInTheDocument();
+    expect(screen.queryByText(/no .* yet\./i)).not.toBeInTheDocument();
+  });
+
+  it('names the honest empty state of each card when the data is real and empty', () => {
+    mockOpsData.mockReturnValue({
+      kpis: { status: 'ready', data: [] },
+      throughput: { status: 'ready', data: { bars: [], peakText: 'PEAK –', avgText: 'AVG –' } },
+      zone: {
+        status: 'ready',
+        data: { ...BASE_OPS_DATA.zone.status === 'ready' ? BASE_OPS_DATA.zone.data : ({} as never), cells: [] },
+      },
+      exceptions: { status: 'ready', data: [] },
+    });
+    renderDashboard();
+    expect(screen.getByText('No KPI data yet.')).toBeInTheDocument();
+    expect(screen.getByText('No activity in this range.')).toBeInTheDocument();
+    expect(screen.getByText('No storage locations yet.')).toBeInTheDocument();
+    expect(screen.getByText('No open exceptions.')).toBeInTheDocument();
   });
 
   it('never renders the deleted mock tiles', () => {
@@ -181,9 +271,9 @@ describe('OperationsControl', () => {
     expect(screen.queryByText(/copilot/i)).not.toBeInTheDocument();
   });
 
-  // Task 11 (defect-burndown): SampleDataCard now mounts only when the
-  // /api/v1/demo/status probe resolves enabled -- previously unconditional,
-  // a dead surface on any deployment with KARYO_DEMO off (the default).
+  // SampleDataCard mounts only when the /api/v1/demo/status probe resolves
+  // enabled -- previously unconditional, a dead surface on any deployment
+  // with KARYO_DEMO off (the default).
   it('hides SampleDataCard when the demo-status probe resolves disabled (or fails)', () => {
     mockOpsData.mockReturnValue(BASE_OPS_DATA);
     mockDemoEnabled.mockReturnValue(false);

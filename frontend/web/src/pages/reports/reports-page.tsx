@@ -3,6 +3,7 @@ import { Download, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useKpis } from '@/features/insights/use-kpis';
+import { KPI_UNDEFINED_VALUE, kpiContext } from '@/features/insights/kpi-notes';
 import { useVolumeByCategory } from '@/features/insights/use-volume-by-category';
 import {
   useReportDefinitions,
@@ -198,7 +199,10 @@ export function ReportsPage() {
 // Sub-components
 // ---------------------------------------------------------------------------
 
-/** KPI trend tile: label, big mono value, inline sparkline, delta pill. */
+/**
+ * KPI trend tile: label, big mono value, inline sparkline, delta pill. An undefined measure
+ * (`value === null`) shows a placeholder and the note saying why, never a zero.
+ */
 function KpiTrendTile({ tile }: { tile: KpiTile }) {
   const spark = toSpark(tile.series);
   const stroke = tile.tone === 'up' ? 'var(--acc-color)' : 'var(--warning-foreground)';
@@ -209,8 +213,13 @@ function KpiTrendTile({ tile }: { tile: KpiTile }) {
         {tile.label}
       </div>
       <div className="mt-3 flex items-end justify-between">
-        <span className="numeric text-[26px] font-bold leading-none tracking-[-0.02em] text-foreground">
-          {tile.value}
+        <span
+          className={cn(
+            'numeric text-[26px] font-bold leading-none tracking-[-0.02em]',
+            tile.value === null ? 'text-muted-foreground/60' : 'text-foreground',
+          )}
+        >
+          {tile.value ?? KPI_UNDEFINED_VALUE}
         </span>
         <svg width="74" height="30" viewBox="0 0 74 30" fill="none" preserveAspectRatio="none" aria-hidden>
           <polyline
@@ -222,12 +231,12 @@ function KpiTrendTile({ tile }: { tile: KpiTile }) {
           />
         </svg>
       </div>
-      {tile.delta != null && (
-        <div className="mt-[11px] flex items-center gap-[7px]">
+      <div className="mt-[11px] flex items-center gap-[7px]">
+        {tile.delta != null && (
           <span className={cn('numeric text-[11px] font-bold', deltaClass)}>{tile.delta}</span>
-          <span className="text-[11px] text-muted-foreground/70">vs prior</span>
-        </div>
-      )}
+        )}
+        <span className="text-[11px] text-muted-foreground/70">{kpiContext(tile)}</span>
+      </div>
     </div>
   );
 }

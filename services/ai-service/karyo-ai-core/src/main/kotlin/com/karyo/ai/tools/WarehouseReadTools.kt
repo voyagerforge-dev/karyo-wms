@@ -60,7 +60,16 @@ class WarehouseReadTools(
         // KpiRange.from() parses by .code ("7D", "30D", "90D", "YTD"); falls back to D30
         val r = KpiRange.from(range.trim().uppercase()) ?: KpiRange.D30
         val resp = kpis.build(tenant.clientId, r, Instant.now())
-        return "${resp.rangeLabel}\n" + resp.tiles.joinToString("\n") { "${it.label}: ${it.value}" }
+        return "${resp.rangeLabel}\n" + resp.tiles.joinToString("\n") { "${it.label}: ${it.value ?: undefinedKpi(it.key)}" }
+    }
+
+    /** Why a KPI has no value: the same reasons the web dashboard's KPI notes give. */
+    private fun undefinedKpi(key: String): String = when (key) {
+        "accuracy" -> "no counted lines in range"
+        "throughput" -> "no activity in range"
+        "cycleTime" -> "no orders shipped in range"
+        "utilization" -> "no storage locations"
+        else -> "not measurable in range"
     }
 
     @Tool("Get current warehouse occupancy grouped by zone (occupied vs total locations).")

@@ -1,6 +1,8 @@
 import { Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ExceptionRow, ExceptionSeverity } from '@/pages/home/ops/ops-adapters';
+import { PanelNotice } from '@/pages/home/ops/panel-notice';
+import type { ExceptionsState } from '@/pages/home/ops/use-ops-data';
 
 const SEVERITY_BAR: Record<ExceptionSeverity, string> = {
   danger: 'bg-destructive',
@@ -9,16 +11,7 @@ const SEVERITY_BAR: Record<ExceptionSeverity, string> = {
 };
 
 interface ExceptionsCardProps {
-  exceptions: ExceptionRow[];
-  /** False on an unlicensed instance — the monitors engine that backs this list is gated. */
-  monitorsEntitled: boolean;
-  /**
-   * True while the monitors license entitlement is still loading, or while an
-   * entitled tenant's alerts query is in flight. While true, neither the
-   * locked panel nor the empty state is shown — both would be a false
-   * absence before the license/query has actually resolved.
-   */
-  monitorsLoading: boolean;
+  state: ExceptionsState;
 }
 
 /**
@@ -26,21 +19,21 @@ interface ExceptionsCardProps {
  * exception (a firing `karyo-monitors` alert) with a severity left-bar,
  * type/detail, and age. Shows a small locked panel when `monitors` isn't
  * entitled, and a quiet empty state when it is entitled but nothing is firing.
+ * While the licence or the alerts are still loading it shows neither: both
+ * would be a false absence before the answer is actually known.
  */
-export function ExceptionsCard({ exceptions, monitorsEntitled, monitorsLoading }: ExceptionsCardProps) {
-  if (monitorsLoading) {
+export function ExceptionsCard({ state }: ExceptionsCardProps) {
+  if (state.status === 'loading') {
+    return <PanelNotice title="Exceptions" testId="exceptions-loading">Loading…</PanelNotice>;
+  }
+  if (state.status === 'error') {
     return (
-      <section
-        data-testid="exceptions-loading"
-        className="rounded-2xl border border-border bg-card p-[var(--cpad,22px)]"
-      >
-        <h2 className="m-0 text-[15px] font-semibold text-foreground">Exceptions</h2>
-        <p className="mt-4 text-[12px] text-muted-foreground">Loading…</p>
-      </section>
+      <PanelNotice title="Exceptions" tone="danger" testId="exceptions-error">
+        Could not load exceptions.
+      </PanelNotice>
     );
   }
-
-  if (!monitorsEntitled) {
+  if (state.status === 'locked') {
     return (
       <section
         data-testid="exceptions-locked"
@@ -54,6 +47,8 @@ export function ExceptionsCard({ exceptions, monitorsEntitled, monitorsLoading }
       </section>
     );
   }
+
+  const exceptions: ExceptionRow[] = state.data;
 
   return (
     <section className="rounded-2xl border border-border bg-card p-[var(--cpad,22px)]">

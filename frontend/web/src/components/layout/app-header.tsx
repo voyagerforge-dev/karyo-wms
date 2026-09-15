@@ -162,12 +162,10 @@ export function AppHeader() {
           <span className="sr-only">Workspace settings</span>
         </Button>
 
-        {/* Notifications */}
+        {/* Notifications. No unread count: there is no notifications feed behind this bell
+            yet, and the badge it used to wear was a hardcoded "3". */}
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-[1.2rem] w-[1.2rem]" />
-          <span className="numeric absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-white">
-            3
-          </span>
           <span className="sr-only">Notifications</span>
         </Button>
 
