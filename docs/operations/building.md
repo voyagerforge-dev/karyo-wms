@@ -39,13 +39,14 @@ an augmented build uses; see [extension SPIs and installation](../integration/ex
 
 ## Building with the commercial engines
 
-The nine commercial engines are not in this repository. `settings.gradle.kts:150-194` includes
-them only when a commercial checkout is present, taking their project directories from it: point
-at one with `-Pkaryo.commercial=<path>` or `KARYO_COMMERCIAL=<path>`, or place it as a sibling
-directory named `karyo-commercial`. An explicitly named path that is not a commercial checkout
-fails the build rather than silently producing a free image. `services/karyo-app/build.gradle.kts`
-adds whatever was included to the application's dependencies and grafts the commercial test suites
-onto its test source set (`services/karyo-app/build.gradle.kts:5-34,64-71`).
+The ten commercial engines, in nine modules, are not in this repository.
+`settings.gradle.kts:150-194` includes those modules only when a commercial checkout is present,
+taking their project directories from it: point at one with `-Pkaryo.commercial=<path>` or
+`KARYO_COMMERCIAL=<path>`, or place it as a sibling directory named `karyo-commercial`. An
+explicitly named path that is not a commercial checkout fails the build rather than silently
+producing a free image. `services/karyo-app/build.gradle.kts` adds whatever was included to the
+application's dependencies and grafts the commercial test suites onto its test source set
+(`services/karyo-app/build.gradle.kts:5-34,64-71`).
 
 With nothing beside this checkout, the same command builds the complete free product: forty-four
 subprojects, and an image in which no licence can unlock an engine, because no engine is on disk.

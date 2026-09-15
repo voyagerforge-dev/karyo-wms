@@ -8,7 +8,7 @@ between them are not declared in any one place; this document assembles them fro
 
 | Tier | Changed by | Takes effect | Scope | Surface |
 |---|---|---|---|---|
-| 1. Runtime store | An administrator in the browser | Immediately | Per goods owner, or instance-wide | 14 catalog keys |
+| 1. Runtime store | An administrator in the browser | Immediately | Per goods owner, or instance-wide | 16 catalog keys |
 | 2. Configuration data | An administrator over REST | Immediately | Varies by entity | Layout, strategies, products, users, clients |
 | 3. Environment | An operator editing config, then restarting | On restart | Instance-wide | 26 `karyo.*` properties, plus 17 read only by commercial engines |
 | 4. Extension JAR | A developer, then a rebuilt image | On redeploy | Instance-wide | 79 SPI interfaces |
@@ -151,18 +151,17 @@ subset of the other, with nothing checking either.
 
 ## The entitlement gate cuts across every tier
 
-Seven licence entitlement keys exist: `cartonization`, `monitors`, `forecasting`, `slotting`,
-`simulation`, `documents`, and `advanced-fulfillment`, which covers three engines -
-cross-docking, waves and streaming. Each is declared by a commercial engine's
-`LicensedModuleInstallation` bean
-(`libs/karyo-license/src/main/kotlin/com/karyo/license/LicensedModuleInstallation.kt:3`). No
-such bean is in this repository, so a free build installs no entitlement and reports itself as
-the community edition: the edition is a property of the image rather than of its licence state,
-and "an entitlement list can only ever be a subset of what the build installs"
+Every commercial engine is gated by a licence entitlement key, listed in
+[commercial engines](../commercial/README.md#ten-engines-nine-modules-eight-keys). Each key is
+declared by a commercial engine's `LicensedModuleInstallation` bean
+(`libs/karyo-license/src/main/kotlin/com/karyo/license/LicensedModuleInstallation.kt:3`). No such
+bean is in this repository, so a free build installs no entitlement and reports itself as the
+community edition: the edition is a property of the image rather than of its licence state, and "an
+entitlement list can only ever be a subset of what the build installs"
 (`libs/karyo-license/src/main/kotlin/com/karyo/license/LicenseEdition.kt:3-22`). How a licence
 reaches a running instance belongs to
-[licence and entitlement](../operations/licence-and-entitlement.md); what the gate does and does
-not hold, to [the commercial boundary](../architecture/commercial-boundary.md).
+[licence and entitlement](../operations/licence-and-entitlement.md); what the gate does and does not
+hold, to [the commercial boundary](../architecture/commercial-boundary.md).
 
 What matters here is that the gate is visible on some configuration screens and invisible on
 another.
@@ -176,10 +175,11 @@ templates page renders only a locked panel without `documents`
 
 **Invisible.** The system properties screen does not. `SystemPropertyCatalog` has no licence
 dependency, `SystemPropertyService.effectiveView` renders `catalog.all()` unconditionally
-(`SystemPropertyService.kt:92-98`), and the page imports no licence hook. Ten of the fourteen
+(`SystemPropertyService.kt:92-98`), and the page imports no licence hook. Twelve of the sixteen
 catalog keys are read only by a commercial engine: two cartonization, two alerts (monitors),
-four cross-dock, one wave and one streaming. A free installation shows all fourteen, with
-types, descriptions, defaults and working Save buttons, and stores whatever is written.
+four cross-dock, one wave, one streaming and two 3PL billing. A free installation shows all
+sixteen, with types, descriptions, defaults and working Save buttons, and stores whatever is
+written.
 
 **Known defect.** The product already has the mechanism and applies it one screen away.
 
@@ -193,7 +193,7 @@ clusters, storage and working areas, location types, the capacity matrix, locati
 assignments, planned occupancy; order and storage strategies including their JSONB knobs; goods
 owners; users and role assignment; products and their capture rules; unit load types; units of
 measure; webhook subscriptions; document templates where that commercial engine is installed and
-entitled; and the fourteen runtime properties.
+entitled; and the sixteen runtime properties.
 
 **Configurable only with a restart:** the environment knobs, including the replenishment scan,
 work dispatch strategy and the sequence generator, and the commercial engines' slotting

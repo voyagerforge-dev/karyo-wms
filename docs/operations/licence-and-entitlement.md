@@ -1,6 +1,6 @@
 # Licence and entitlement
 
-Karyo is Apache-2.0. Nine optional engines are licensed separately and are not in this repository.
+Karyo is Apache-2.0. Ten optional engines are licensed separately and are not in this repository.
 This document covers the mechanism that lets one build carry both halves: what a licence is, how
 one reaches a running deployment, and what it does and does not do once it is there. What the gate
 protects, and how a free installation meets it, is in

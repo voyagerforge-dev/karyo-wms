@@ -150,7 +150,7 @@ include(":services:karyo-app")
 // ---------------------------------------------------------------------------
 // Optional commercial overlay
 //
-// The nine commercial engines are not in this repository. They live in a separate
+// The nine commercial engine modules are not in this repository. They live in a separate
 // private repository and are included here only when a checkout of it is present,
 // taking their project directories from it. With nothing beside this checkout the
 // build is the complete free product and KARYO_LICENSE cannot unlock code that is

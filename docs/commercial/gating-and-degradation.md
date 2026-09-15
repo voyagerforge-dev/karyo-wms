@@ -31,6 +31,7 @@ type was chosen over 402 Payment Required because some HTTP clients mishandle 40
 | Cross-docking | hard + soft | 3 REST methods `require`; interceptor and sweep `isEntitled` | 403 on the API; ordinary putaway happens |
 | Wave fulfilment | hard + soft | 25 REST methods `require`; observer and scheduler `isEntitled` | 403 on the API; no progression, no auto-release |
 | Order streaming | hard + soft | 3 REST methods `require`; scheduler `isEntitled` | 403 on the API; nothing streams |
+| 3PL billing | hard | 2 REST methods | 403 |
 
 The split is coherent: a **hard** gate where the engine adds a capability with no free equivalent,
 so an error is the honest answer, and a **soft** gate where the engine replaces a free behaviour
@@ -51,18 +52,19 @@ Counting HTTP method annotations against `require` calls in every engine's REST 
 | `AlertResource` | 3 | 3 |
 | `MonitorResource` | 2 | 2 |
 | `AlertDeliveryResource` | 2 | 2 |
+| `BillingResource` | 2 | 2 |
 | `ForecastResource` | 1 | 1 |
 | `SlottingResource` | 1 | 1 |
 | `SimulationResource` | 1 | 1 |
 | `DocumentTemplateResource` | 4 | 0 |
-| **Total** | **45** | **41** |
+| **Total** | **47** | **43** |
 
 The last row is not a hole: all four methods delegate to the engine's `DocumentTemplateService`, whose
 four public methods each open with a shared check that calls `licenseService.require("documents")`,
 and the resource's KDoc says so.
 
 What matters is the other half: there is no interceptor binding, no annotation, no test and no build
-rule that fails when a new endpoint in an engine forgets its gate. Roughly forty-five hand-written
+rule that fails when a new endpoint in an engine forgets its gate. Roughly forty-seven hand-written
 call sites hold the commercial boundary by convention, and the table above is the only way to
 re-prove it.
 
@@ -126,11 +128,12 @@ operator has the least context to interpret an error.
 restart ([ADR 0021](../architecture/decisions/0021-signed-entitlement-resolved-at-startup.md)). What
 no document covers is what the restart lands on.
 
-For six of the nine engines it is uneventful. Forecasting, slotting and simulation are pure reads, so
-their screens simply lock. Cartonization degrades to the free packout on the next pack. Document
-templates degrade to the bundled templates on the next render, which is the templates provider's
-stated intent. Monitors stops sweeping, stops delivering, and leaves its existing alert rows in place
-and unreadable through a 403 API.
+For seven of the ten engines it is uneventful. Forecasting, slotting and simulation are pure reads,
+so their screens simply lock. 3PL billing stores nothing, so its two endpoints simply refuse.
+Cartonization degrades to the free packout on the next pack. Document templates degrade to the
+bundled templates on the next render, which is the templates provider's stated intent. Monitors
+stops sweeping, stops delivering, and leaves its existing alert rows in place and unreadable through
+a 403 API.
 
 **Known defect: cross-docking strands live matches.** The cross-dock expiry sweep returns immediately
 when unentitled, so MATCHED and STAGED rows past their staging deadline are never disposed of: no

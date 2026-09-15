@@ -1,6 +1,6 @@
 # The commercial boundary
 
-Karyo is Apache-2.0. Nine optional engines are licensed separately and their code is not in this
+Karyo is Apache-2.0. Ten optional engines are licensed separately and their code is not in this
 repository. This document describes where the free product stops, how one build picks the engines
 up when they are present, and what the entitlement gate does and does not cover.
 
@@ -26,13 +26,15 @@ build the document-templates engine sits beside it.
 | Cartonization | `karyo-cartonization-core` | `cartonization` |
 | Document templates | `karyo-doctemplates-core` | `documents` |
 | Event monitors | `karyo-monitors-core` | `monitors` |
+| 3PL billing | `karyo-monitors-core` | `three-pl` |
 | Demand forecasting | `karyo-forecasting-core` | `forecasting` |
 | Slotting advisor | `karyo-slotting-core` | `slotting` |
 | Reorder simulation | `karyo-simulation-core` | `simulation` |
 
 Three modules share one key. A customer buying Advanced Fulfillment gets waves, cross-docking and
-order streaming together. [Commercial engines](../commercial/README.md) describes what each engine
-does.
+order streaming together. One module carries two engines: `karyo-monitors-core` holds 3PL billing,
+under its own `three-pl` key, beside event monitors. [Commercial engines](../commercial/README.md)
+describes what each engine does.
 
 ## Two repositories, one build
 
@@ -86,7 +88,7 @@ builds.
   `karyo.simulation`, `karyo.crossdock`, `karyo.wave` and `karyo.streaming` in
   `services/karyo-app/src/main/resources/application.yaml:170-191,231-244`, read by beans that a free
   build does not contain. The runtime catalogue lists the engines' knobs too
-  ([Commercial engines](../commercial/README.md#the-nine-engines-and-the-free-products-own-settings-screen)).
+  ([Commercial engines](../commercial/README.md#the-ten-engines-and-the-free-products-own-settings-screen)).
 - **Their screens.** Both front ends are wholly public and include every commercial screen. The
   console shows a locked panel in their place; the floor app does not
   ([Gating and degradation](../commercial/gating-and-degradation.md)).
@@ -152,13 +154,13 @@ soft-gates, because receiving must keep working - ordinary putaway is the struct
 
 ### Coverage audit
 
-Every one of the 45 HTTP methods in the engines' REST surfaces is gated, 41 at the resource and the
+Every one of the 47 HTTP methods in the engines' REST surfaces is gated, 43 at the resource and the
 remaining four one layer down in the service they delegate to. The per-resource table is in
 [Gating and degradation](../commercial/gating-and-degradation.md#coverage-still-holds-and-still-nothing-keeps-it-holding).
 
 So coverage is complete. What is missing is anything that keeps it complete. There is no CDI
 interceptor binding, no annotation, no test and no build rule that fails when a new endpoint in an
-engine forgets its gate. Roughly 45 hand-written call sites hold the commercial boundary by
+engine forgets its gate. Roughly 47 hand-written call sites hold the commercial boundary by
 convention, and re-counting them is the only way to re-prove it. The cross-docking "interceptor" is
 named in the domain sense; it is a plain `@ApplicationScoped` observer, not a CDI `@Interceptor`, so
 the pattern is not already in use.
@@ -177,7 +179,7 @@ the pattern is not already in use.
   transactions carry no licence check at all.
 - **What a free installation carries.** The engines' tables, configuration keys and settings-screen
   entries are present and inert. Setting them does nothing.
-- **Cross-engine dependencies.** In a full build all nine engines are installed whatever the licence
+- **Cross-engine dependencies.** In a full build all ten engines are installed whatever the licence
   says, so one engine depending on another's beans is invisible until an installation holds one
   entitlement without the other.
 
@@ -191,7 +193,7 @@ the vendor key both happen outside this repository.
 
 ## Related
 
-- [Commercial engines](../commercial/README.md) - the nine engines, seen from outside
+- [Commercial engines](../commercial/README.md) - the ten engines, seen from outside
 - [Gating and degradation](../commercial/gating-and-degradation.md) - how each one refuses
 - [Licence and entitlement](../operations/licence-and-entitlement.md) - installing a licence
 - [Building](../operations/building.md) - building with and without the commercial checkout

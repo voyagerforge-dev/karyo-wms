@@ -86,7 +86,7 @@ class AdminExtensionsResource {
         // the two kinds yet, and that is tracked separately.
         //
         // A row whose module is not on the runtime classpath resolves to nothing and is dropped
-        // from the response, which is how the nine commercial engines' seams behave in a free
+        // from the response, which is how the commercial engines' seams behave in a free
         // installation: their `-api` module is here, so the seam is declared and listed with an
         // empty `implementations`, and the engine that would fill it is not installed.
         private val CURATED_SPI_SEAMS = listOf(

@@ -281,7 +281,7 @@ The runtime-settings store (`auth` V1202). `RuntimePropertyLookup` resolves in t
 4. the caller-supplied default.
 
 So a database row silently beats an environment variable, and that is intentional: the environment
-variable is the fallback, not the authority. Fourteen keys are catalogued in
+variable is the fallback, not the authority. Sixteen keys are catalogued in
 `services/auth-service/karyo-auth-core/src/main/kotlin/com/karyo/auth/config/SystemPropertyCatalog.kt`,
 each with a type, a group, a default, and an `ownerWritable` flag. See
 [the runtime configuration store](../configuration/runtime-configuration-store.md).

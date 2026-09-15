@@ -158,7 +158,7 @@ explainable afterwards.
 
 **Outbox** - the internal queue that makes webhook delivery reliable across restarts.
 
-**Commercial engine** - one of nine optional modules not included in the free application. See
+**Commercial engine** - one of ten optional engines not included in the free application. See
 [commercial engines](../commercial/README.md).
 
 ## Related

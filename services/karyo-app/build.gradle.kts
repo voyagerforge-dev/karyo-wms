@@ -61,7 +61,7 @@ dependencies {
     implementation(project(":services:ai-service:karyo-ai-core"))
     implementation(project(":services:demo-service:karyo-demo"))
     implementation(project(":services:document-service:karyo-docstore-core"))
-    // The nine commercial engines are included by settings.gradle.kts only when a
+    // The nine commercial engine modules are included by settings.gradle.kts only when a
     // commercial checkout is present. Whatever it included, this picks up; with
     // nothing beside this checkout the loop adds nothing and the image is the free
     // product. The engines plug in through SPIs declared in the Apache-2.0 -api

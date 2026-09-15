@@ -144,6 +144,25 @@ class SystemPropertyCatalog {
             "karyo.streaming.enabled", PropertyType.BOOLEAN, "Streaming",
             "Enable the order streaming scheduler for this tenant (default false; strategies opt in via releaseMode = STREAM)", "false",
         ),
+
+        // 3PL billing (B7): the rate and currency the paid karyo-b7-3pl-pack bills a goods owner
+        // at. Both are ownerWritable = false, same rationale as `karyo.inventory.purge.retention-days`
+        // above but sharper: these ARE the numbers a goods owner is invoiced against, so a
+        // goods-owner admin writing its own client row above the operator's client-0/env fallback
+        // would let a tenant rewrite the rate it is billed at. Only ops (SYS) may set them. Reads
+        // (and the billing engine that consumes them) are unaffected. STRING, not INTEGER, because
+        // a storage rate is a fractional currency amount and INTEGER would lose sub-unit precision.
+        PropertyDefinition(
+            "karyo.threepl.rate.storage-per-ul-day", PropertyType.STRING, "3PL Billing",
+            "Amount billed per stored unit load per day (decimal currency amount; the karyo-b7-3pl-pack " +
+                "billing engine reads it. Unset by default - no storage charge until an operator sets it)", null,
+            ownerWritable = false,
+        ),
+        PropertyDefinition(
+            "karyo.threepl.currency", PropertyType.STRING, "3PL Billing",
+            "ISO-4217 currency code the 3PL storage rate is billed in (default USD)", "USD",
+            ownerWritable = false,
+        ),
     )
 
     fun all(): List<PropertyDefinition> = defs
