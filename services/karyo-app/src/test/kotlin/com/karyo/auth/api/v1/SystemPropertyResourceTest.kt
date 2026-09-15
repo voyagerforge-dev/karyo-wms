@@ -28,6 +28,16 @@ private const val SLACK_KEY = "karyo.alerts.slack.webhook-url"
 /** STRING catalog key, non-secret + ownerWritable, unconsumed as of SC16 — stored-row flows. */
 private const val EMAIL_KEY = "karyo.alerts.email.recipients"
 
+/**
+ * STRING catalog key, `ownerWritable=false` — the 3PL storage rate a goods owner is billed at
+ * (B7). A goods-owner admin must not be able to rewrite the rate it is invoiced against, so only
+ * ops (SYS) may write it.
+ */
+private const val RATE_KEY = "karyo.threepl.rate.storage-per-ul-day"
+
+/** STRING catalog key, `ownerWritable=false` — the 3PL billing currency (B7), default USD. */
+private const val CURRENCY_KEY = "karyo.threepl.currency"
+
 /** The literal the effective view substitutes for a secret key's value. */
 private const val MASK = "••••••"
 
@@ -65,6 +75,14 @@ class SystemPropertyResourceTest {
             // Fix-round contract fields: the hard stop is ops-controlled, the webhook write-only.
             .body("find { it.key == '$BOOL_KEY' }.ownerWritable", equalTo(false))
             .body("find { it.key == '$SLACK_KEY' }.secret", equalTo(true))
+            // 3PL billing keys (B7): operator-controlled so a goods owner can't rewrite its own rate.
+            .body("find { it.key == '$RATE_KEY' }.type", equalTo("STRING"))
+            .body("find { it.key == '$RATE_KEY' }.group", equalTo("3PL Billing"))
+            .body("find { it.key == '$RATE_KEY' }.ownerWritable", equalTo(false))
+            .body("find { it.key == '$RATE_KEY' }.source", equalTo("DEFAULT"))
+            .body("find { it.key == '$RATE_KEY' }.value", nullValue())
+            .body("find { it.key == '$CURRENCY_KEY' }.ownerWritable", equalTo(false))
+            .body("find { it.key == '$CURRENCY_KEY' }.defaultValue", equalTo("USD"))
             // The email recipients key exists nowhere → catalog DEFAULT (null value).
             .body("find { it.key == '$EMAIL_KEY' }.source", equalTo("DEFAULT"))
             .body("find { it.key == '$EMAIL_KEY' }.value", nullValue())
@@ -260,6 +278,36 @@ class SystemPropertyResourceTest {
             .body("type", equalTo("https://karyo.com/errors/system-property-owner-forbidden"))
 
         given().`when`().delete("$BASE/$BOOL_KEY")
+            .then().statusCode(403)
+            .body("type", equalTo("https://karyo.com/errors/system-property-owner-forbidden"))
+    }
+
+    /**
+     * B7 billing posture pin: the 3PL storage rate and currency ARE the numbers a goods owner is
+     * invoiced against, so an OWNER admin writing its own client row would let a tenant rewrite the
+     * rate it is billed at. Both must stay `ownerWritable=false`.
+     */
+    @Test
+    @TestSecurity(user = "owner-admin", roles = ["ADMIN", "user-admin"])
+    @OidcSecurity(claims = [Claim(key = "client_id", value = "1"), Claim(key = "principal_kind", value = "owner")])
+    fun `an owner admin cannot write or delete a 3PL billing rate - 403`() {
+        given().contentType(ContentType.JSON)
+            .body("""{"value":"0.001"}""")
+            .`when`().put("$BASE/$RATE_KEY")
+            .then().statusCode(403)
+            .body("type", equalTo("https://karyo.com/errors/system-property-owner-forbidden"))
+
+        given().`when`().delete("$BASE/$RATE_KEY")
+            .then().statusCode(403)
+            .body("type", equalTo("https://karyo.com/errors/system-property-owner-forbidden"))
+
+        given().contentType(ContentType.JSON)
+            .body("""{"value":"EUR"}""")
+            .`when`().put("$BASE/$CURRENCY_KEY")
+            .then().statusCode(403)
+            .body("type", equalTo("https://karyo.com/errors/system-property-owner-forbidden"))
+
+        given().`when`().delete("$BASE/$CURRENCY_KEY")
             .then().statusCode(403)
             .body("type", equalTo("https://karyo.com/errors/system-property-owner-forbidden"))
     }
