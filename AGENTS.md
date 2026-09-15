@@ -86,7 +86,7 @@ Cross-layer couplings an agent will miss from the file they opened. The module g
   behaviour to a free module.
 
 Pact consumer specs vs provider tests barely co-change; the coupling is the `pact-verify` job.
-`config/test-runner-contracts.json` is the include/exclude owner for Gradle, Vitest and Playwright.
+`config/test-runner-contracts.json` is the include/exclude owner for Gradle, Vitest, Playwright and Node test.
 
 ## Gate map
 

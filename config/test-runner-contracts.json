@@ -132,6 +132,18 @@
       "setup_files": [
         "src/test/setup.ts"
       ]
+    },
+    {
+      "runner": "node-test",
+      "kind": "source-tree",
+      "prefixes": [
+        "tests/e2e/fixtures/"
+      ],
+      "suffixes": [
+        ".test.ts"
+      ],
+      "project_root": "tests/e2e",
+      "task_name": "test:helpers"
     }
   ],
   "operational_sources": [
