@@ -143,19 +143,28 @@ function dayMonth(date: Date): string {
   return `${date.getDate()} ${MONTH.format(date)}`;
 }
 
+const DAY_MS = 86_400_000;
+
+/** At most this many day-and-month ticks, so their labels never run into each other. */
+const MAX_DAY_TICKS = 7;
+
 /**
- * Axis labels for the daily bars. A week fits weekday names; a month gets a
- * day number every fifth bar; anything longer is ticked only where the month
- * changes. The columns are too narrow for a label each, and an ISO date under
- * every bar would be unreadable.
+ * Axis labels for the daily bars. Bars exist only for days with activity, so the
+ * style follows the calendar span from the first bar to the last, not the bar
+ * count: within one week, weekday names; up to about two months, a "14 Sep" tick
+ * on every fifth bar (spaced wider when there are too many bars for the ticks to
+ * fit); anything longer is ticked only where the month changes. The columns are
+ * too narrow for a label each, and an ISO date under every bar would be unreadable.
  */
 function barLabels(days: string[]): string[] {
-  if (days.length <= 7) return days.map((d) => WEEKDAY.format(parseDay(d)));
-  if (days.length <= 31) return days.map((d, i) => (i % 5 === 0 ? String(parseDay(d).getDate()) : ''));
-  return days.map((d, i) => {
-    const month = parseDay(d).getMonth();
-    return i === 0 || month !== parseDay(days[i - 1]).getMonth() ? MONTH.format(parseDay(d)) : '';
-  });
+  const dates = days.map(parseDay);
+  const spanDays = Math.round((dates[dates.length - 1].getTime() - dates[0].getTime()) / DAY_MS);
+  if (spanDays < 7) return dates.map((d) => WEEKDAY.format(d));
+  if (spanDays <= 62) {
+    const stride = Math.max(5, Math.ceil(dates.length / MAX_DAY_TICKS));
+    return dates.map((d, i) => (i % stride === 0 ? dayMonth(d) : ''));
+  }
+  return dates.map((d, i) => (i === 0 || d.getMonth() !== dates[i - 1].getMonth() ? MONTH.format(d) : ''));
 }
 
 /** Builds daily throughput bars from `chart.outbound` (units picked per activity day). */

@@ -173,13 +173,42 @@ describe('kpiChartToThroughput', () => {
       });
 
     const month = kpiChartToThroughput({ ...kpiRes, chart: { ...kpiRes.chart, outbound: days(new Date(2026, 8, 1), 20) } });
-    expect(month.bars.map((b) => b.label).slice(0, 6)).toEqual(['1', '', '', '', '', '6']);
+    expect(month.bars.map((b) => b.label).slice(0, 6)).toEqual(['1 Sep', '', '', '', '', '6 Sep']);
 
-    const quarter = kpiChartToThroughput({ ...kpiRes, chart: { ...kpiRes.chart, outbound: days(new Date(2026, 7, 25), 40) } });
+    const quarter = kpiChartToThroughput({ ...kpiRes, chart: { ...kpiRes.chart, outbound: days(new Date(2026, 7, 25), 70) } });
     const ticks = quarter.bars.map((b) => b.label).filter((l) => l !== '');
-    expect(ticks).toEqual(['Aug', 'Sep', 'Oct']);
+    expect(ticks).toEqual(['Aug', 'Sep', 'Oct', 'Nov']);
     expect(quarter.bars[0].label).toBe('Aug');
     expect(quarter.bars[7].label).toBe('Sep'); // 2026-09-01
+  });
+
+  it('picks the label style from the calendar span of sparse activity days, not from the bar count', () => {
+    const bars = (isoDays: string[]) =>
+      kpiChartToThroughput({ ...kpiRes, chart: { ...kpiRes.chart, outbound: isoDays.map((day) => ({ day, value: 5 })) } })
+        .bars.map((b) => b.label);
+
+    // Five activity days across a 90D range are three months, not one week.
+    expect(bars(['2026-06-20', '2026-07-03', '2026-07-28', '2026-08-14', '2026-09-10'])).toEqual(['Jun', 'Jul', '', 'Aug', 'Sep']);
+
+    // Eight activity days across a 30D range get day-and-month ticks, not bare day numbers.
+    expect(bars(['2026-08-18', '2026-08-20', '2026-08-25', '2026-08-29', '2026-09-02', '2026-09-05', '2026-09-10', '2026-09-15'])).toEqual([
+      '18 Aug', '', '', '', '', '5 Sep', '', '',
+    ]);
+
+    // A 7D window can hold eight calendar days; a repeated weekday name would be ambiguous.
+    expect(bars(['2026-09-08', '2026-09-15'])).toEqual(['8 Sep', '']);
+    expect(bars(['2026-09-09', '2026-09-15'])).toEqual(['Wed', 'Tue']);
+  });
+
+  it('spaces day-and-month ticks wider when two months hold too many bars for every fifth to fit', () => {
+    const outbound = Array.from({ length: 60 }, (_, i) => {
+      const d = new Date(2026, 0, 1 + i);
+      return { day: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`, value: 5 };
+    });
+    const ticks = kpiChartToThroughput({ ...kpiRes, chart: { ...kpiRes.chart, outbound } })
+      .bars.map((b) => b.label)
+      .filter((l) => l !== '');
+    expect(ticks).toEqual(['1 Jan', '10 Jan', '19 Jan', '28 Jan', '6 Feb', '15 Feb', '24 Feb']);
   });
 
   it('handles an empty outbound series without crashing', () => {

@@ -34,8 +34,9 @@ export function ThroughputCard({ state }: ThroughputCardProps) {
   }
 
   // Column spacing follows the bar count: a week gets the wide, rounded bars of the
-  // prototype; a month or a quarter packs them so every day still fits inside the card.
-  const gap = view.bars.length <= 7 ? 'gap-2.5' : view.bars.length <= 31 ? 'gap-1' : 'gap-px';
+  // prototype; a month packs them; anything denser has no gap at all, so the columns
+  // alone share the width and a full year of days still fits inside the card.
+  const gap = view.bars.length <= 7 ? 'gap-2.5' : view.bars.length <= 31 ? 'gap-1' : 'gap-0';
 
   return (
     <section className="rounded-2xl border border-border bg-card p-[var(--cpad,22px)]">
@@ -66,14 +67,18 @@ export function ThroughputCard({ state }: ThroughputCardProps) {
                   : { height: `${b.pct}%`, background: b.isPeak ? 'var(--acc-color)' : 'var(--acc-dim)' }
               }
             />
-            <span
-              className={cn(
-                'numeric min-h-[1em] whitespace-nowrap text-[10px]',
-                b.isPeak ? 'text-primary' : 'text-muted-foreground/70',
-              )}
-            >
-              {b.label}
-            </span>
+            {/* A fixed-height slot with the label taken out of flow: every column keeps the same
+                baseline whether or not it carries a tick, and no label can widen its column. */}
+            <div className="relative h-[15px] w-full shrink-0">
+              <span
+                className={cn(
+                  'numeric absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap text-[10px] leading-[15px]',
+                  b.isPeak ? 'text-primary' : 'text-muted-foreground/70',
+                )}
+              >
+                {b.label}
+              </span>
+            </div>
           </div>
         ))}
       </div>

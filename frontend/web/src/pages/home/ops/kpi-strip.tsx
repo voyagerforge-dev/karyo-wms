@@ -15,6 +15,9 @@ const DELTA_CLASS: Record<DeltaTone, string> = {
   danger: 'text-destructive',
 };
 
+/** A change that rounds to zero is neither good nor bad, whatever side of zero the raw values fell. */
+const LEVEL_DELTA_CLASS = 'text-muted-foreground';
+
 interface KpiStripProps {
   state: PanelState<KpiCell[]>;
 }
@@ -98,7 +101,12 @@ export function KpiStrip({ state }: KpiStripProps) {
           </div>
           <div className="mt-[9px] flex items-center gap-2">
             {kpi.delta && (
-              <span className={cn('numeric text-[11px] font-bold', DELTA_CLASS[kpi.tone])}>
+              <span
+                className={cn(
+                  'numeric text-[11px] font-bold',
+                  kpi.delta.arrow === '=' ? LEVEL_DELTA_CLASS : DELTA_CLASS[kpi.tone],
+                )}
+              >
                 {kpi.delta.arrow} {kpi.delta.text}
               </span>
             )}

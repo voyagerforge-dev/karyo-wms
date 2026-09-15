@@ -35,10 +35,11 @@ note reads *Live snapshot*.
 
 ### The three cards
 
-- **Throughput** charts one quantity: outbound units picked per day, one bar per day, with the
-  **PEAK** day and the **AVG** of that same series above it. A day with no picks is a hairline,
-  not a small bar. The axis names weekdays over a week, ticks every fifth day over a month, and
-  marks only month changes over a longer range. Shipments are deliberately not plotted, because
+- **Throughput** charts one quantity: outbound units picked per day, one bar per day with
+  activity, with the **PEAK** day and the **AVG** of that same series above it. A day with
+  activity but no picks is a hairline, not a small bar. The axis names weekdays when the bars
+  fall within one week, marks day and month (such as *14 Sep*) on every fifth bar or so when
+  they span up to two months, and marks only month changes over a longer span. Shipments are deliberately not plotted, because
   a shipment count is not a unit quantity and mixing them would mislead. To compare picked
   against received, use the **Picked vs received** trend on **Insights > Reports**, which
   plots both.

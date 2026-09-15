@@ -158,6 +158,24 @@ describe('OperationsControl', () => {
     expect(screen.queryByText(/0\.0%/)).not.toBeInTheDocument();
   });
 
+  it('paints a change that rounds to zero neutral, not in the tone of its raw direction', () => {
+    mockOpsData.mockReturnValue({
+      ...BASE_OPS_DATA,
+      kpis: {
+        status: 'ready',
+        data: [
+          { label: 'Inventory accuracy', value: '98.4%', points: '', tone: 'warning', delta: { arrow: '=', text: '0.0%' }, context: 'vs prior period' },
+          { label: 'Throughput', value: '100/day', points: '', tone: 'warning', delta: { arrow: '▼', text: '3/day' }, context: 'vs prior period' },
+        ],
+      },
+    });
+    renderDashboard();
+    const level = screen.getByText('= 0.0%');
+    expect(level).toHaveClass('text-muted-foreground');
+    expect(level).not.toHaveClass('text-warning-foreground');
+    expect(screen.getByText('▼ 3/day')).toHaveClass('text-warning-foreground');
+  });
+
   it('renders throughput bars with no Shift toggle', () => {
     mockOpsData.mockReturnValue(BASE_OPS_DATA);
     renderDashboard();
