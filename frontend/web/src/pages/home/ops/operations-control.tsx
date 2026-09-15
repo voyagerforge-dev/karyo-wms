@@ -13,22 +13,17 @@ import { useDemoEnabled } from '@/features/sample-data/use-demo-enabled';
 import { RANGES, type ReportRange } from '@/types/insights';
 
 /**
- * Operations Control — the floor manager's real-time command center (Screen 1).
+ * Operations Control: the floor manager's real-time command center (Screen 1).
  *
- * Rewired to real data (demo-hardening Task 3): 4 tiles, all backed by real
- * endpoints via `useOpsData` (`GET /insights/kpis`, `GET /insights/occupancy`,
- * `GET /alerts`) — KPI strip, Throughput, Zone occupancy, Exceptions. The
- * mock-only tiles (Copilot recs, Active waves, Dock doors, Picker throughput)
- * and their `use-ops-console` data source are gone; those engines don't exist
- * yet (wave planning / yard management / labor reporting / AI copilot are
- * future milestones).
+ * Four tiles, all backed by real endpoints via `useOpsData` (`GET /insights/kpis`,
+ * `GET /insights/occupancy`, `GET /alerts`): KPI strip, Throughput, Zone occupancy,
+ * Exceptions. Each tile receives a `PanelState` and renders loading, failed and
+ * honestly-empty states distinctly, so nothing on this screen is a number that was
+ * not measured. The prototype's other tiles (Copilot recs, Active waves, Dock doors,
+ * Picker throughput) are gone: those engines don't exist yet.
  *
- * `SampleDataCard` (re-remounted 2026-07-21, see that file's header) sits
- * above the KPI strip -- the same spot the pre-redesign dashboard gave it.
- * Mounted only when `useDemoEnabled()` resolves true (Task 11,
- * defect-burndown, 2026-07-31): the card was previously unconditional, a
- * dead surface whose Load click 500'd (and toasted forever) on any
- * deployment with `KARYO_DEMO` off.
+ * `SampleDataCard` sits above the KPI strip, mounted only when `useDemoEnabled()`
+ * resolves true: on a deployment with `KARYO_DEMO` off its Load click would only 500.
  */
 const DENSITIES: Array<{ value: Density; label: string }> = [
   { value: 'comfortable', label: 'Comfortable' },
@@ -73,8 +68,7 @@ export function OperationsControl() {
               </button>
             ))}
           </div>
-          {/* Density toggle (v2 tweakable prop) — still drives the spacing vars
-              (--cpad/--kpad/--cgap/--secmb) the 4 kept tiles use. */}
+          {/* Density toggle: drives the spacing vars (--cpad/--kpad/--cgap/--secmb) the tiles use. */}
           <div className="numeric flex gap-[3px] rounded-[10px] border border-border bg-background p-[3px]">
             {DENSITIES.map((d) => (
               <button
@@ -97,16 +91,12 @@ export function OperationsControl() {
 
       {demoEnabled && <SampleDataCard />}
 
-      <KpiStrip kpis={ops.kpis} />
+      <KpiStrip state={ops.kpis} />
 
       <div className="grid grid-cols-1 gap-[var(--cgap,20px)] lg:grid-cols-3">
-        <ThroughputCard view={ops.throughput} />
-        <ZoneHeatmap field={ops.zone} />
-        <ExceptionsCard
-          exceptions={ops.exceptions}
-          monitorsEntitled={ops.monitorsEntitled}
-          monitorsLoading={ops.monitorsLoading}
-        />
+        <ThroughputCard state={ops.throughput} />
+        <ZoneHeatmap state={ops.zone} />
+        <ExceptionsCard state={ops.exceptions} />
       </div>
     </div>
   );

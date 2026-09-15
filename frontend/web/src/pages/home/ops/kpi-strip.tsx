@@ -1,5 +1,7 @@
 import { cn } from '@/lib/utils';
+import { KPI_UNDEFINED_VALUE } from '@/features/insights/kpi-notes';
 import type { DeltaTone, KpiCell } from '@/pages/home/ops/ops-adapters';
+import type { PanelState } from '@/pages/home/ops/panel-state';
 
 const STROKE: Record<DeltaTone, string> = {
   up: 'var(--acc-color)',
@@ -14,21 +16,41 @@ const DELTA_CLASS: Record<DeltaTone, string> = {
 };
 
 interface KpiStripProps {
-  kpis: KpiCell[];
+  state: PanelState<KpiCell[]>;
+}
+
+function StripNotice({ tone, testId, children }: { tone: 'muted' | 'danger'; testId: string; children: string }) {
+  return (
+    <div
+      data-testid={testId}
+      className={cn(
+        'mb-[var(--secmb,20px)] flex items-center justify-center rounded-2xl border border-border bg-card p-6 text-[12px]',
+        tone === 'danger' ? 'text-destructive' : 'text-muted-foreground',
+      )}
+    >
+      {children}
+    </div>
+  );
 }
 
 /**
- * The KPI strip — a single rounded bar divided into equal cells by right
- * borders. Each cell: micro-label → mono value (+ dimmed unit) + inline
- * 58×24 sparkline → delta arrow + context.
+ * The KPI strip: a single rounded bar divided into equal cells by right
+ * borders. Each cell: micro-label, mono value + inline 58×24 sparkline, then
+ * the delta arrow and a context note. An undefined measure shows a
+ * placeholder and its note instead of a number; a cell with no delta shows
+ * no arrow.
  */
-export function KpiStrip({ kpis }: KpiStripProps) {
+export function KpiStrip({ state }: KpiStripProps) {
+  if (state.status === 'loading') {
+    return <StripNotice tone="muted" testId="kpi-strip-loading">Loading KPIs…</StripNotice>;
+  }
+  if (state.status === 'error') {
+    return <StripNotice tone="danger" testId="kpi-strip-error">Could not load KPIs.</StripNotice>;
+  }
+
+  const kpis = state.data;
   if (kpis.length === 0) {
-    return (
-      <div className="mb-[var(--secmb,20px)] flex items-center justify-center rounded-2xl border border-border bg-card p-6 text-[12px] text-muted-foreground">
-        No KPI data yet.
-      </div>
-    );
+    return <StripNotice tone="muted" testId="kpi-strip-empty">No KPI data yet.</StripNotice>;
   }
 
   return (
@@ -48,11 +70,14 @@ export function KpiStrip({ kpis }: KpiStripProps) {
             <span
               className={cn(
                 'numeric text-[25px] font-bold tracking-[-0.02em]',
-                kpi.valueDanger ? 'text-destructive' : 'text-foreground',
+                kpi.value === null
+                  ? 'text-muted-foreground/60'
+                  : kpi.valueDanger
+                    ? 'text-destructive'
+                    : 'text-foreground',
               )}
             >
-              {kpi.value}
-              {kpi.unit ? <span className="text-[14px] text-muted-foreground/80">{kpi.unit}</span> : null}
+              {kpi.value ?? KPI_UNDEFINED_VALUE}
             </span>
             <svg
               width="58"
@@ -72,9 +97,11 @@ export function KpiStrip({ kpis }: KpiStripProps) {
             </svg>
           </div>
           <div className="mt-[9px] flex items-center gap-2">
-            <span className={cn('numeric text-[11px] font-bold', DELTA_CLASS[kpi.tone])}>
-              {kpi.deltaArrow} {kpi.deltaText}
-            </span>
+            {kpi.delta && (
+              <span className={cn('numeric text-[11px] font-bold', DELTA_CLASS[kpi.tone])}>
+                {kpi.delta.arrow} {kpi.delta.text}
+              </span>
+            )}
             <span className="text-[11px] text-muted-foreground/70">{kpi.context}</span>
           </div>
         </div>

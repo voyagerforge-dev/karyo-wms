@@ -56,9 +56,27 @@ describe('ReportsPage', () => {
   it('renders delta when present and omits it when null', async () => {
     render(createElement(ReportsPage));
     await waitFor(() => expect(screen.getByText('+0.6%')).toBeInTheDocument());
-    // utilization has delta=null — "vs prior" text should appear only once (accuracy tile)
-    const vsPrior = screen.getAllByText('vs prior');
-    expect(vsPrior).toHaveLength(1);
+    // utilization has delta=null: it is a live snapshot, so only the accuracy tile compares.
+    expect(screen.getAllByText('vs prior period')).toHaveLength(1);
+    expect(screen.getByText('Live snapshot')).toBeInTheDocument();
+  });
+
+  it('shows a placeholder and note for an undefined KPI instead of a zero', async () => {
+    mockUseKpis.mockReturnValue({
+      isLoading: false, isError: false, isSuccess: true,
+      data: {
+        range: '30D', rangeLabel: 'Last 30 days',
+        tiles: [
+          { key: 'cycleTime', label: 'Order cycle time', value: null, delta: null, tone: 'up', series: [] },
+        ],
+        chart: { outbound: [], received: [] },
+      },
+    });
+    render(createElement(ReportsPage));
+    await waitFor(() => expect(screen.getByText('Order cycle time')).toBeInTheDocument());
+    expect(screen.getByText('–')).toBeInTheDocument();
+    expect(screen.getByText('No orders shipped in range')).toBeInTheDocument();
+    expect(screen.queryByText(/0\.0h/)).not.toBeInTheDocument();
   });
 
   it('renders empty-state when tiles array is empty (fresh install, all-zero chart guard)', async () => {

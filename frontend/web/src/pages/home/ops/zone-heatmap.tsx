@@ -1,26 +1,33 @@
 import { cn } from '@/lib/utils';
 import type { ZoneField } from '@/pages/home/ops/ops-adapters';
+import { PanelNotice } from '@/pages/home/ops/panel-notice';
+import type { PanelState } from '@/pages/home/ops/panel-state';
 
 interface ZoneHeatmapProps {
-  /** Real occupancy field from `useOpsData` (`occupancyToZoneField`), or `null` while loading. */
-  field: ZoneField | null;
+  state: PanelState<ZoneField>;
 }
 
 /**
  * Zone heatmap: one 20px cell per REAL storage location (colored by its
- * actual occupancy state), laid out in a responsive auto-fill grid — there is
- * no fixed zone/aisle geometry to assume, so (unlike the old 6×12 mock grid
- * with row labels A–F) the cell count varies with the facility. A legend row
- * sits below.
+ * actual occupancy state), laid out in a responsive auto-fill grid. There is
+ * no fixed zone/aisle geometry to assume, so the cell count varies with the
+ * facility. A legend row sits below.
  */
-export function ZoneHeatmap({ field }: ZoneHeatmapProps) {
-  if (!field || field.cells.length === 0) {
+export function ZoneHeatmap({ state }: ZoneHeatmapProps) {
+  if (state.status === 'loading') {
+    return <PanelNotice title="Zone occupancy" testId="zone-loading">Loading…</PanelNotice>;
+  }
+  if (state.status === 'error') {
     return (
-      <section className="rounded-2xl border border-border bg-card p-[var(--cpad,22px)]">
-        <h2 className="m-0 text-[15px] font-semibold text-foreground">Zone occupancy</h2>
-        <p className="mt-4 text-[12px] text-muted-foreground">No occupancy data yet.</p>
-      </section>
+      <PanelNotice title="Zone occupancy" tone="danger" testId="zone-error">
+        Could not load occupancy.
+      </PanelNotice>
     );
+  }
+
+  const field = state.data;
+  if (field.cells.length === 0) {
+    return <PanelNotice title="Zone occupancy" testId="zone-empty">No storage locations yet.</PanelNotice>;
   }
 
   return (

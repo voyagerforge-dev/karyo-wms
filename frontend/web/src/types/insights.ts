@@ -6,9 +6,13 @@ export interface RangePoint { day: string; value: number; }
 export interface KpiTile {
   key: 'accuracy' | 'throughput' | 'cycleTime' | 'utilization';
   label: string;
-  /** Pre-formatted string from the backend — render verbatim. */
-  value: string;
-  /** Pre-formatted delta string, or null when not applicable (e.g. utilization). */
+  /**
+   * Pre-formatted string from the backend, rendered verbatim. `null` when the measure is
+   * undefined over the range (nothing counted, shipped or picked; no storage locations): show
+   * a placeholder and the note from `kpiContext()`, never a zero.
+   */
+  value: string | null;
+  /** Pre-formatted delta string, or null when there is none (undefined value, no prior period, utilization). */
   delta: string | null;
   tone: 'up' | 'warning';
   series: RangePoint[];
@@ -44,6 +48,7 @@ export interface OccupancyZone {
   zoneName: string;
   occupied: number;
   total: number;
+  /** occupied / total as a 0..1 fraction, not a percentage. */
   pct: number;
   locations: OccupancyCell[];
   /** Σ capacity over this zone's capacitied locations; null when none of them have capacity set. */
@@ -55,6 +60,7 @@ export interface OccupancyZone {
 export interface OccupancyTotals {
   occupied: number;
   total: number;
+  /** occupied / total as a 0..1 fraction, not a percentage. */
   pct: number;
   /** Σ capacity over locations with a non-null capacity. */
   capacitySlots?: number;

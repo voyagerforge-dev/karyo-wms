@@ -1,4 +1,5 @@
 import type { AlertDto, BackendSeverity } from '@/pages/monitors/monitors-api';
+import { kpiContext } from '@/features/insights/kpi-notes';
 import type { KpiDashboardResponse, OccupancyResponse, OccupancyState, RangePoint } from '@/types/insights';
 
 /**
@@ -7,15 +8,12 @@ import type { KpiDashboardResponse, OccupancyResponse, OccupancyState, RangePoin
  * These turn real API response shapes (`/insights/kpis`, `/insights/occupancy`,
  * `/alerts`) into the exact presentational shapes the tile components
  * (`kpi-strip.tsx`, `throughput-card.tsx`, `zone-heatmap.tsx`,
- * `exceptions-card.tsx`) render. The interfaces below were originally copied
- * (not imported) from the now-deleted `use-ops-console.ts` mock module — the
- * tiles were rewired to import these types directly once `useOpsData` landed
- * (Task 3).
+ * `exceptions-card.tsx`) render.
  *
- * No fabrication: every field here is derived from a real response field.
- * Fields that only exist in the mock (order-fill/on-time KPI cells, hourly
- * "Shift" throughput, pick-density/replen-need zone metrics) are dropped —
- * there is no backend for them yet.
+ * No fabrication: every field here is derived from a real response field, and
+ * an absent measurement stays absent. A KPI the backend reports as undefined
+ * (`value: null`) keeps a `null` value and gets a note saying why; a KPI with
+ * no prior period gets no delta arrow; a day with zero picks gets a zero bar.
  */
 
 /* -------------------------------------------------------------------------- */
@@ -24,18 +22,25 @@ import type { KpiDashboardResponse, OccupancyResponse, OccupancyState, RangePoin
 
 export type DeltaTone = 'up' | 'warning' | 'danger';
 
+export interface KpiDelta {
+  /** Direction of the change; `=` when it rounds to zero at display precision. */
+  arrow: '▲' | '▼' | '=';
+  /** Sign-free magnitude, e.g. "0.3%" or "2.0h". */
+  text: string;
+}
+
 export interface KpiCell {
   label: string;
-  value: string;
-  /** Dimmed unit suffix (e.g. "%", "m") or undefined. */
-  unit?: string;
+  /** Pre-formatted value, or `null` when the measure is undefined (rendered as a placeholder). */
+  value: string | null;
   /** Whether the big value paints in the danger color. */
   valueDanger?: boolean;
   /** Sparkline polyline points, 58x24 viewbox. Empty string when no series data. */
   points: string;
   tone: DeltaTone;
-  deltaArrow: '▲' | '▼';
-  deltaText: string;
+  /** Change against the prior period; `null` when there is none, so no arrow is painted. */
+  delta: KpiDelta | null;
+  /** One-line note under the value: what the delta compares against, or why there is none. */
   context: string;
 }
 
@@ -60,33 +65,34 @@ function seriesToPoints(series: RangePoint[]): string {
     .join(' ');
 }
 
-/** Splits a pre-formatted delta string (e.g. "+0.3", "-2m") into arrow + sign-free text. */
-function parseDelta(delta: string | null): { arrow: '▲' | '▼'; text: string } {
-  if (!delta) return { arrow: '▲', text: '' };
+/**
+ * Splits a pre-formatted delta string (e.g. "+0.3%", "-2.0h") into arrow + sign-free text. A
+ * change that rounds to zero ("+0.0h", "-0.0%") gets `=` rather than a direction it does not have.
+ */
+function parseDelta(delta: string | null): KpiDelta | null {
+  if (!delta) return null;
   const trimmed = delta.trim();
-  const arrow = trimmed.startsWith('-') ? '▼' : '▲';
-  return { arrow, text: trimmed.replace(/^[+-]/, '') };
+  const text = trimmed.replace(/^[+-]/, '');
+  const arrow = parseFloat(text) === 0 ? '=' : trimmed.startsWith('-') ? '▼' : '▲';
+  return { arrow, text };
 }
 
 /**
  * Maps the 4 real KPI tiles (accuracy/throughput/cycleTime/utilization) into
  * `KpiCell`s, plus an optional 5th "Open exceptions" cell sourced from the
- * monitors firing count. `openExceptions` is `null` when monitors aren't
- * entitled — the cell is omitted rather than fabricated.
+ * monitors firing count. `openExceptions` is `null` until a real count has
+ * loaded (monitors not entitled, or still fetching): the cell is omitted
+ * rather than fabricated.
  */
 export function kpisToCells(res: KpiDashboardResponse, openExceptions: number | null): KpiCell[] {
-  const cells: KpiCell[] = res.tiles.map((tile) => {
-    const { arrow, text } = parseDelta(tile.delta);
-    return {
-      label: tile.label,
-      value: tile.value,
-      points: seriesToPoints(tile.series),
-      tone: tile.tone,
-      deltaArrow: arrow,
-      deltaText: text,
-      context: '',
-    };
-  });
+  const cells: KpiCell[] = res.tiles.map((tile) => ({
+    label: tile.label,
+    value: tile.value,
+    points: seriesToPoints(tile.series),
+    tone: tile.tone,
+    delta: parseDelta(tile.delta),
+    context: kpiContext(tile),
+  }));
 
   if (openExceptions !== null) {
     cells.push({
@@ -95,9 +101,8 @@ export function kpisToCells(res: KpiDashboardResponse, openExceptions: number | 
       valueDanger: openExceptions > 0,
       points: '',
       tone: openExceptions > 0 ? 'danger' : 'up',
-      deltaArrow: '▲',
-      deltaText: '',
-      context: '',
+      delta: null,
+      context: 'Firing now',
     });
   }
 
@@ -109,8 +114,9 @@ export function kpisToCells(res: KpiDashboardResponse, openExceptions: number | 
 /* -------------------------------------------------------------------------- */
 
 export interface ThroughputBar {
+  /** Short axis label; empty for a bar that gets no tick on a long range. */
   label: string;
-  /** Bar height as a percentage (min 8, so a bar is always visible). */
+  /** Bar height as a percentage: 0 for a zero day, otherwise at least 8 so a small value stays visible. */
   pct: number;
   isPeak: boolean;
 }
@@ -121,31 +127,60 @@ export interface ThroughputView {
   avgText: string;
 }
 
+const NO_VALUE = '–';
+
+/** The backend buckets days as ISO `YYYY-MM-DD` in warehouse-local time; read it as a local date. */
+function parseDay(iso: string): Date {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+const WEEKDAY = new Intl.DateTimeFormat('en-US', { weekday: 'short' });
+const MONTH = new Intl.DateTimeFormat('en-US', { month: 'short' });
+
+/** "14 Sep" style day label for the PEAK read-out. */
+function dayMonth(date: Date): string {
+  return `${date.getDate()} ${MONTH.format(date)}`;
+}
+
 /**
- * Builds daily throughput bars from `chart.outbound`. There is no hourly
- * "Shift" backing series — only the daily view is real, so the Shift/Day
- * toggle concept from the mock is dropped here.
+ * Axis labels for the daily bars. A week fits weekday names; a month gets a
+ * day number every fifth bar; anything longer is ticked only where the month
+ * changes. The columns are too narrow for a label each, and an ISO date under
+ * every bar would be unreadable.
  */
+function barLabels(days: string[]): string[] {
+  if (days.length <= 7) return days.map((d) => WEEKDAY.format(parseDay(d)));
+  if (days.length <= 31) return days.map((d, i) => (i % 5 === 0 ? String(parseDay(d).getDate()) : ''));
+  return days.map((d, i) => {
+    const month = parseDay(d).getMonth();
+    return i === 0 || month !== parseDay(days[i - 1]).getMonth() ? MONTH.format(parseDay(d)) : '';
+  });
+}
+
+/** Builds daily throughput bars from `chart.outbound` (units picked per activity day). */
 export function kpiChartToThroughput(res: KpiDashboardResponse): ThroughputView {
   const series = res.chart.outbound;
   if (series.length === 0) {
-    return { bars: [], peakText: 'PEAK —', avgText: 'AVG —' };
+    return { bars: [], peakText: `PEAK ${NO_VALUE}`, avgText: `AVG ${NO_VALUE}` };
   }
 
   const values = series.map((p) => p.value);
   const max = Math.max(...values);
-  const peakIdx = values.indexOf(max);
   const avg = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+  const labels = barLabels(series.map((p) => p.day));
 
-  const bars: ThroughputBar[] = series.map((p) => ({
-    label: p.day,
-    pct: max === 0 ? 8 : Math.max(8, Math.round((p.value / max) * 100)),
-    isPeak: p.value === max,
+  const bars: ThroughputBar[] = series.map((p, i) => ({
+    label: labels[i],
+    pct: p.value === 0 ? 0 : Math.max(8, Math.round((p.value / max) * 100)),
+    isPeak: max > 0 && p.value === max,
   }));
+
+  const peakDay = max > 0 ? dayMonth(parseDay(series[values.indexOf(max)].day)).toUpperCase() : null;
 
   return {
     bars,
-    peakText: `PEAK ${series[peakIdx].day.toUpperCase()} ${max.toLocaleString()}`,
+    peakText: peakDay ? `PEAK ${peakDay} ${max.toLocaleString()}` : `PEAK ${NO_VALUE}`,
     avgText: `AVG ${avg.toLocaleString()}`,
   };
 }
@@ -180,8 +215,7 @@ const ZONE_COLOR: Record<OccupancyState, string> = {
 /**
  * Flattens every real location (across zones + unzoned) into one cell per
  * location, colored by its actual occupancy state. There is no pick-density
- * or replen-need backing metric, so only the occupancy view exists here —
- * the mock's 3-metric switcher is dropped.
+ * or replen-need backing metric, so only the occupancy view exists here.
  */
 export function occupancyToZoneField(res: OccupancyResponse): ZoneField {
   const zones = res.unzoned ? [...res.zones, res.unzoned] : res.zones;
@@ -197,7 +231,8 @@ export function occupancyToZoneField(res: OccupancyResponse): ZoneField {
   return {
     cells,
     title: 'Zone occupancy',
-    sub: `FACILITY ${res.totals.pct}% FULL`,
+    // `totals.pct` is a 0..1 fraction (see `OccupancyTotals`), the same one the Occupancy page scales.
+    sub: `FACILITY ${Math.round(res.totals.pct * 100)}% FULL`,
     badgeText: `${lockedCount} LOCKED`,
     badgeTone: lockedCount > 0 ? 'danger' : 'accent',
     legendUnit: 'STATE',

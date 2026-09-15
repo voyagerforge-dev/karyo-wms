@@ -26,16 +26,22 @@ understanding before you act on it.
 | **Order cycle time** | Average hours per order, over orders that completed in the range. Lower is better, and it is coloured that way. |
 | **Utilization** | Occupied locations as a share of usable locations, **right now**. It is a snapshot, so it ignores the range selector and shows no trend. |
 
-Each KPI except Utilization also shows a change against the equivalent preceding period. If
-there is no prior data, no change is shown rather than a fabricated zero.
+A KPI with nothing to measure in the range shows a dash and a note saying which: *No counted
+lines in range*, *No activity in range*, *No orders shipped in range* or *No storage
+locations*. A zero would be a fabricated figure there; 0% accuracy over zero counts is not a
+measurement. Each KPI except Utilization also shows a change against the equivalent preceding
+period when both periods have data; otherwise the note reads *No prior period*. Utilization's
+note reads *Live snapshot*.
 
 ### The three cards
 
 - **Throughput** charts one quantity: outbound units picked per day, one bar per day, with the
-  **PEAK** day and the **AVG** of that same series above it. Shipments are deliberately not
-  plotted, because a shipment count is not a unit quantity and mixing them would mislead. To
-  compare picked against received, use the **Picked vs received** trend on **Insights >
-  Reports**, which plots both.
+  **PEAK** day and the **AVG** of that same series above it. A day with no picks is a hairline,
+  not a small bar. The axis names weekdays over a week, ticks every fifth day over a month, and
+  marks only month changes over a longer range. Shipments are deliberately not plotted, because
+  a shipment count is not a unit quantity and mixing them would mislead. To compare picked
+  against received, use the **Picked vs received** trend on **Insights > Reports**, which
+  plots both.
 - **Zone occupancy** is one small square per storage location, coloured **occupied**, **empty**
   or **locked**, with a legend below. Above it sits a single facility-wide percentage and a
   count of locked locations. It is not a per-zone breakdown: the squares are not grouped or
@@ -44,6 +50,11 @@ there is no prior data, no change is shown rather than a fabricated zero.
 - **Exceptions** lists fired warehouse alerts. **This card needs the Event monitors
   commercial engine.** Without it the card shows a locked panel reading *"Requires the
   Monitors add-on."* The rest of the dashboard works normally.
+
+Every part of the page says *Loading…* until its data has arrived and *Could not load …* if the
+request failed; neither is ever shown as an empty result. Throughput with no activity day in the
+range reads *No activity in this range*, and Zone occupancy with no storage locations reads *No
+storage locations yet*.
 
 If your installation has demo data enabled, a sample-data card appears above the KPI strip.
 On a production installation it is absent.
