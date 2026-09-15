@@ -57,7 +57,7 @@ The costs are real and visible in the build:
 ## Runner discovery
 
 `config/test-runner-contracts.json` is shared by the root `build.gradle.kts`, both Vitest configs and
-both Playwright configs, so discovery rules are not forked into prose or a second config. Four
+both Playwright configs, so discovery rules are not forked into prose or a second config. Five
 contracts cover the ordinary suites:
 
 - **gradle**: prefixes `buildSrc/`, `libs/`, `services/`, path segment `/src/test/`, with
@@ -65,6 +65,9 @@ contracts cover the ordinary suites:
 - **playwright**: every spec file under `tests/e2e/tests/`, with `forbid_skips` enforced by a
   custom reporter (`tests/e2e/fixtures/no-skipped-tests-reporter.ts`) and `forbid_only`.
 - **vitest-mobile** and **vitest-web**: the two front-end trees.
+- **node-test**: every `*.test.ts` file under `tests/e2e/fixtures/`, the fixture helper
+  tests CI runs through `npm run test:helpers` (`.github/workflows/ci.yml:94-100`) with the
+  Node.js built-in test runner (`node --test`).
 
 The same file lists five **operational** sources, each with its runner and the reason it is kept out
 of the ordinary suites: a licence re-mint utility that needs the vendor's private key, which is not
