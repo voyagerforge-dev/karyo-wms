@@ -68,14 +68,13 @@ instead of leaving it to be rediscovered.
 | `karyo.crossdock.expiry-action` | STRING | Cross-docking | `AUTO_PUTAWAY` | no | advanced-fulfillment |
 | `karyo.wave.auto-release` | BOOLEAN | Waves | `false` | yes | advanced-fulfillment |
 | `karyo.streaming.enabled` | BOOLEAN | Streaming | `false` | yes | advanced-fulfillment |
-| `karyo.threepl.rate.storage-per-ul-day` | STRING | 3PL Billing | none | no | karyo-b7-3pl-pack |
-| `karyo.threepl.currency` | STRING | 3PL Billing | `USD` | no | karyo-b7-3pl-pack |
+| `karyo.threepl.rate.storage-per-ul-day` | STRING | 3PL Billing | none | no | three-pl |
+| `karyo.threepl.currency` | STRING | 3PL Billing | `USD` | no | three-pl |
 
-All sixteen are defined at `SystemPropertyCatalog.kt:38-165`. Twelve of the sixteen are read only
-by a commercial engine - the last column names the entitlement it needs, or for the two 3PL
-billing keys the engine that reads them. Those engines are not in this repository, so in a free
-installation nothing reads those twelve keys at all; the store neither knows nor says so - see
-[the configuration boundary](the-configuration-boundary.md).
+All sixteen are defined at `SystemPropertyCatalog.kt:38-165`. Twelve of the sixteen are read only by
+a commercial engine - the last column names the entitlement it needs. Those engines are not in this
+repository, so in a free installation nothing reads those twelve keys at all; the store neither
+knows nor says so - see [the configuration boundary](the-configuration-boundary.md).
 
 For the four keys whose consumers are in this repository, each catalog default matches the
 default the consumer passes at the call site: `OverReceiptGuard.kt:44-46`,

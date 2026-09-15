@@ -151,18 +151,17 @@ subset of the other, with nothing checking either.
 
 ## The entitlement gate cuts across every tier
 
-Seven licence entitlement keys exist: `cartonization`, `monitors`, `forecasting`, `slotting`,
-`simulation`, `documents`, and `advanced-fulfillment`, which covers three engines -
-cross-docking, waves and streaming. Each is declared by a commercial engine's
-`LicensedModuleInstallation` bean
-(`libs/karyo-license/src/main/kotlin/com/karyo/license/LicensedModuleInstallation.kt:3`). No
-such bean is in this repository, so a free build installs no entitlement and reports itself as
-the community edition: the edition is a property of the image rather than of its licence state,
-and "an entitlement list can only ever be a subset of what the build installs"
+Every commercial engine is gated by a licence entitlement key, listed in
+[commercial engines](../commercial/README.md#ten-engines-nine-modules-eight-keys). Each key is
+declared by a commercial engine's `LicensedModuleInstallation` bean
+(`libs/karyo-license/src/main/kotlin/com/karyo/license/LicensedModuleInstallation.kt:3`). No such
+bean is in this repository, so a free build installs no entitlement and reports itself as the
+community edition: the edition is a property of the image rather than of its licence state, and "an
+entitlement list can only ever be a subset of what the build installs"
 (`libs/karyo-license/src/main/kotlin/com/karyo/license/LicenseEdition.kt:3-22`). How a licence
 reaches a running instance belongs to
-[licence and entitlement](../operations/licence-and-entitlement.md); what the gate does and does
-not hold, to [the commercial boundary](../architecture/commercial-boundary.md).
+[licence and entitlement](../operations/licence-and-entitlement.md); what the gate does and does not
+hold, to [the commercial boundary](../architecture/commercial-boundary.md).
 
 What matters here is that the gate is visible on some configuration screens and invisible on
 another.

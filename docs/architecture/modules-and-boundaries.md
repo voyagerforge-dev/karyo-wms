@@ -19,12 +19,12 @@ SPI interfaces and cross-module event payloads, the `core` module holds JPA enti
 REST resources ([ADR 0006](decisions/0006-api-and-core-modules.md)).
 
 Seven `-api` modules have no `-core` beside them in this repository: monitors, forecasting,
-slotting, simulation, cross-docking, waves and order streaming. Their implementations are
-commercial engines, included only when a commercial checkout is present (see
-[The commercial boundary](commercial-boundary.md)). Two further engines, cartonization and
-document templates, have no `api` of their own: they implement SPIs declared elsewhere -
-`PackoutStrategy` in `karyo-fulfillment-api` and `DocumentTemplateProvider` in
-`libs/karyo-documents`.
+slotting, simulation, cross-docking, waves and order streaming. Their implementations are commercial
+engines, included only when a commercial checkout is present (see
+[The commercial boundary](commercial-boundary.md)). Two further engines, cartonization and document
+templates, have no `api` of their own: they implement SPIs declared elsewhere - `PackoutStrategy` in
+`karyo-fulfillment-api` and `DocumentTemplateProvider` in `libs/karyo-documents`. A tenth engine,
+3PL billing, has no module of its own: it ships inside `karyo-monitors-core`.
 
 Shared libraries: `karyo-common` (base entities, `Patchable<T>`, warehouse time zone),
 `karyo-events` (the outbox), `karyo-security` (tenant context and scope), `karyo-license`

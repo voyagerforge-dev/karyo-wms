@@ -126,7 +126,7 @@ their results, what the change does not prove, and its migration and upgrade imp
 
 ## The commercial engines
 
-The nine commercial engines are not in this repository and cannot be changed here. Their `-api`
+The ten commercial engines are not in this repository and cannot be changed here. Their `-api`
 modules and the SPI seams they implement are, and those take contributions like any other module:
 they are part of the free product's contract. [The commercial boundary](docs/architecture/commercial-boundary.md)
 explains where the line runs.

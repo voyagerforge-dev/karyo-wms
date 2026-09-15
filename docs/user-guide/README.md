@@ -35,7 +35,7 @@ using it, start with [deploying Karyo](../operations/deploying.md) and the
 
 ## What this guide does not cover
 
-**Commercial engines.** Nine optional engines are not part of the free application, so their
+**Commercial engines.** Ten optional engines are not part of the free application, so their
 screens show a locked panel instead of data. This guide says so wherever you would meet one,
 and never describes an engine you do not have. [Commercial engines](../commercial/README.md)
 describes what each engine does and what it does not do.

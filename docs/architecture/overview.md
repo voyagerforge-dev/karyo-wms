@@ -74,9 +74,10 @@ Gradle graph is not the whole picture: modules also couple through the shared sc
 events bound by type, and through SPI implementations resolved at runtime.
 [Modules and boundaries](modules-and-boundaries.md) maps all four.
 
-The nine commercial engines are not in this repository. When a commercial checkout sits beside this
-one, `settings.gradle.kts:150-194` includes them and `services/karyo-app/build.gradle.kts:64-71` adds
-them to the application; without one, the loop adds nothing and the image is the free product
+The ten commercial engines, in nine modules, are not in this repository. When a commercial checkout
+sits beside this one, `settings.gradle.kts:150-194` includes those modules and
+`services/karyo-app/build.gradle.kts:64-71` adds them to the application; without one, the loop adds
+nothing and the image is the free product
 ([ADR 0020](decisions/0020-free-and-commercial-boundary-per-module.md)). Their `-api` modules, the
 seams they implement, their migrations, their configuration keys and their screens are here.
 [The commercial boundary](commercial-boundary.md) explains where the line runs.

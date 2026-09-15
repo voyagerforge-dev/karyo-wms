@@ -1,6 +1,6 @@
 # Commercial engines
 
-Karyo's free product is complete on its own. Nine optional engines extend it and are licensed
+Karyo's free product is complete on its own. Ten optional engines extend it and are licensed
 separately; their code is not in this repository. This page is the outside view: what each engine
 does, what it needs, what it deliberately does not do, and what a free installation shows in its
 place.
@@ -10,7 +10,7 @@ not cover - is in [The commercial boundary](../architecture/commercial-boundary.
 refuses, and what a lapsed entitlement does to work in flight, is in
 [Gating and degradation](gating-and-degradation.md).
 
-## Nine modules, eight keys
+## Ten engines, nine modules, eight keys
 
 | Engine | Entitlement key | What it does | What it does not do |
 |---|---|---|---|
@@ -23,9 +23,12 @@ refuses, and what a lapsed entitlement does to work in flight, is in
 | Cross-docking | `advanced-fulfillment` | Routes matching receipts to outbound staging, with ordinary putaway as the fallback | Has no screen of its own; does nothing until a matching rung is enabled |
 | Wave fulfilment | `advanced-fulfillment` | Selects and allocates orders for batch picking, sorting and cross-order pack-out | Does not replace free picking and packing - it orchestrates them |
 | Order streaming | `advanced-fulfillment` | Releases eligible orders in micro-batches and tracks waiting or stalled work | Does not recover stalled work on its own or send notifications |
+| 3PL billing | `three-pl` | Serves each goods owner its own storage rate card, and lets operating-company managers preview a priced storage statement for a named goods owner | Prices storage only, from a unit-load-day quantity the caller supplies; does not measure occupancy, issue an invoice or store a statement |
 
-Three of the nine share the `advanced-fulfillment` key, so a customer buys eight things, not nine,
-and buying Advanced Fulfillment buys cross-docking, waves and order streaming together.
+Three of the ten share the `advanced-fulfillment` key, and buying Advanced Fulfillment buys
+cross-docking, waves and order streaming together. 3PL billing has no module of its own: it ships
+inside the event monitors module under its own `three-pl` key. So the ten engines come in nine
+modules, and a customer buys eight things, not ten.
 
 Wave fulfilment is best described as commercial orchestration over free picking and packing
 primitives, and so are cross-docking and order streaming: each reaches the warehouse through free
@@ -46,6 +49,7 @@ commercial checkout present, and its key in a signed licence
 | Order streaming | `karyo.streaming.enabled` for the client, default false, and a strategy or order whose release mode is `STREAM` (`:140-147`) |
 | Forecasting, slotting, simulation | Pick history inside their window; tuning keys under `karyo.forecasting`, `karyo.slotting` and `karyo.simulation` in `services/karyo-app/src/main/resources/application.yaml:174-191` |
 | Document templates | An operations administrator to author overrides; the bundled templates render otherwise |
+| 3PL billing | An operations administrator to set `karyo.threepl.rate.storage-per-ul-day` - unset, storage bills at zero - and `karyo.threepl.currency` if the default `USD` is wrong. A goods owner cannot set either (`:148-165`) |
 
 ## What a free installation shows in their place
 
@@ -60,20 +64,21 @@ commercial checkout present, and its key in a signed licence
 | Admin > System properties | The engines' knobs, listed and inert |
 | The database | The engines' tables, created and empty |
 
-## There is one commercial image and it contains all nine
+## There is one commercial image and it contains all ten
 
-With a commercial checkout present, the settings file includes all nine engines and the app picks up
-all nine (`settings.gradle.kts:164-174`, `services/karyo-app/build.gradle.kts:64-71`). There is no
-per-engine build flag. So there are exactly two build shapes:
+With a commercial checkout present, the settings file includes all nine engine modules and the app
+picks up all nine, which carry all ten engines (`settings.gradle.kts:164-174`,
+`services/karyo-app/build.gradle.kts:64-71`). There is no per-engine build flag. So there are
+exactly two build shapes:
 
 - **Community.** This repository alone. No `LicensedModuleInstallation` bean, so
   `LicenseEdition.of` reports `community`
   (`libs/karyo-license/src/main/kotlin/com/karyo/license/LicenseEdition.kt:21-22`).
-- **Commercial.** This repository with the commercial checkout, carrying all nine.
+- **Commercial.** This repository with the commercial checkout, carrying all ten.
 
 **Entitlement, not installation, is the whole boundary in a commercial deployment.** A customer who
-buys `slotting` alone receives an image containing all nine engines, all wired into CDI, all with
-their tables migrated, and eight of them refusing to act. One artefact serves every customer. It also
+buys `slotting` alone receives an image containing all ten engines, all wired into CDI, all with
+their tables migrated, and nine of them refusing to act. One artefact serves every customer. It also
 has a consequence nothing records: the engines can depend on each other's beans and nobody will
 notice until an installation holds one entitlement without the other.
 
@@ -87,7 +92,8 @@ installation, and the wave and streaming engines also stamp columns onto free ta
 ([Data and persistence](../architecture/data-and-persistence.md#the-commercial-engines-schema-lives-here)).
 **The free community edition creates every engine's tables and never writes a row into them.**
 
-Cartonization, forecasting, slotting and simulation add no schema at all: they are pure reads.
+Cartonization, forecasting, slotting, simulation and 3PL billing add no schema at all: they are pure
+reads.
 
 ## They mostly drive free code
 
@@ -131,12 +137,12 @@ within a session; a full reload picks up any change server-side"
 (`frontend/web/src/features/license/use-license.ts:4-9`), which is right given that the backend
 resolves entitlements once at construction.
 
-## The nine engines and the free product's own settings screen
+## The ten engines and the free product's own settings screen
 
 `SystemPropertyCatalog` lives in `karyo-auth-core`, which is Apache-2.0, and it carries entries for
 cross-docking, waves, order streaming and cartonization, plus the two alert-delivery keys the
-monitors engine reads and the 3PL storage rate and billing currency the karyo-b7-3pl-pack engine
-bills at
+monitors engine reads and the 3PL storage rate and billing currency the 3PL billing engine bills
+at
 (`services/auth-service/karyo-auth-core/src/main/kotlin/com/karyo/auth/config/SystemPropertyCatalog.kt:43-53,66-78,100-165`).
 **Known defect:** a free community installation's **Admin > System properties** therefore lists
 knobs for engines that build cannot contain. Setting them is harmless and does nothing.

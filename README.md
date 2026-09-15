@@ -52,13 +52,13 @@ The [architecture overview](docs/architecture/overview.md) describes the whole, 
 ## Free and commercial
 
 Everything in this repository is [Apache-2.0](LICENSE): the complete warehouse application, every
-`-api` module and every extension seam. Nine optional commercial engines - event monitors, demand
+`-api` module and every extension seam. Ten optional commercial engines - event monitors, demand
 forecasting, slotting advice, reorder simulation, cross-docking, wave fulfilment, order streaming,
-document templates and cartonization - are licensed separately and are not in this repository.
-Their screens ship in the free front ends, and the desktop console shows a locked panel in their
-place. A licence key decides which engines run in an image that contains them; it cannot add an
-engine that is not there. [Commercial engines](docs/commercial/README.md) describes each one from
-the outside.
+document templates, cartonization and 3PL billing - are licensed separately and are not in this
+repository. Their screens ship in the free front ends, and the desktop console shows a locked panel
+in their place. A licence key decides which engines run in an image that contains them; it cannot
+add an engine that is not there. [Commercial engines](docs/commercial/README.md) describes each one
+from the outside.
 
 ## Status
 
