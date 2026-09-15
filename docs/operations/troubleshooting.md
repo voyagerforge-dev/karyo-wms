@@ -56,7 +56,7 @@ Simulation, Document templates, and the Exceptions card on the dashboard.
 A few console controls are placed but not connected: **Allocate**, **Print docs**, **Hold** and
 **More actions** on the order screen, **Substitute** and **Backorder** on the Copilot strip there,
 **Replenish** on an item, **Export CSV** on Reports, and the **Notifications** bell in the console
-header, whose red count is a fixed placeholder rather than a real unread total. The
+header, which has no notifications feed behind it and so shows no unread count. The
 [user guide](../user-guide/README.md) names the working route in each case. For allocation it is
 **Release** followed by **Release to picking**; for replenishment it is **Scan now** on the Tasks
 board; for stock as CSV it is **Export** on the Inventory screen.

@@ -11,7 +11,8 @@ The landing page is headed **Operations Control** with a live clock under it. It
   page, not the rest of the console.
 - **A density toggle** offering **Comfortable** and **Command**. This only changes spacing.
   Pick whichever suits your monitor; the choice is remembered.
-- **A KPI strip** of four measures.
+- **A KPI strip** of four measures, plus an **Open exceptions** count noted *Firing now* when
+  the Event monitors engine is installed.
 - **Three cards**: Throughput, Zone occupancy and Exceptions.
 
 ### What the four KPIs actually mean
@@ -39,10 +40,10 @@ note reads *Live snapshot*.
   activity, with the **PEAK** day and the **AVG** of that same series above it. A day with
   activity but no picks is a hairline, not a small bar. The axis names weekdays when the bars
   fall within one week, marks day and month (such as *14 Sep*) on every fifth bar or so when
-  they span up to two months, and marks only month changes over a longer span. Shipments are deliberately not plotted, because
-  a shipment count is not a unit quantity and mixing them would mislead. To compare picked
-  against received, use the **Picked vs received** trend on **Insights > Reports**, which
-  plots both.
+  they span up to two months, and marks only month changes over a longer span. Shipments are
+  deliberately not plotted, because a shipment count is not a unit quantity and mixing them
+  would mislead. To compare picked against received, use the **Picked vs received** trend on
+  **Insights > Reports**, which plots both.
 - **Zone occupancy** is one small square per storage location, coloured **occupied**, **empty**
   or **locked**, with a legend below. Above it sits a single facility-wide percentage and a
   count of locked locations. It is not a per-zone breakdown: the squares are not grouped or
