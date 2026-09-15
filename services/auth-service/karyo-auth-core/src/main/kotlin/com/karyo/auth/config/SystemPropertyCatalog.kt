@@ -155,12 +155,12 @@ class SystemPropertyCatalog {
         PropertyDefinition(
             "karyo.threepl.rate.storage-per-ul-day", PropertyType.STRING, "3PL Billing",
             "Amount billed per stored unit load per day (decimal currency amount; the karyo-b7-3pl-pack " +
-                "billing engine reads it. Unset by default — no storage charge until an operator sets it)", null,
+                "billing engine reads it. Unset by default - no storage charge until an operator sets it)", null,
             ownerWritable = false,
         ),
         PropertyDefinition(
             "karyo.threepl.currency", PropertyType.STRING, "3PL Billing",
-            "ISO-4217 currency code the 3PL storage/handling rates are billed in (default USD)", "USD",
+            "ISO-4217 currency code the 3PL storage rate is billed in (default USD)", "USD",
             ownerWritable = false,
         ),
     )

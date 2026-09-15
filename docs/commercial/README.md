@@ -135,8 +135,9 @@ resolves entitlements once at construction.
 
 `SystemPropertyCatalog` lives in `karyo-auth-core`, which is Apache-2.0, and it carries entries for
 cross-docking, waves, order streaming and cartonization, plus the two alert-delivery keys the
-monitors engine reads
-(`services/auth-service/karyo-auth-core/src/main/kotlin/com/karyo/auth/config/SystemPropertyCatalog.kt:43-53,66-78,100-147`).
+monitors engine reads and the 3PL storage rate and billing currency the karyo-b7-3pl-pack engine
+bills at
+(`services/auth-service/karyo-auth-core/src/main/kotlin/com/karyo/auth/config/SystemPropertyCatalog.kt:43-53,66-78,100-165`).
 **Known defect:** a free community installation's **Admin > System properties** therefore lists
 knobs for engines that build cannot contain. Setting them is harmless and does nothing.
 

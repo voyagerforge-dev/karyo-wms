@@ -6,14 +6,14 @@ person can change on a running instance without a restart. Its catalog is writte
 existing `@ConfigProperty` knobs migrate onto the runtime store"
 (`services/auth-service/karyo-auth-core/src/main/kotlin/com/karyo/auth/config/SystemPropertyCatalog.kt:27-34`).
 
-The catalog holds fourteen keys. Every other `karyo.*` knob is environment-only - see
+The catalog holds sixteen keys. Every other `karyo.*` knob is environment-only - see
 [the configuration boundary](the-configuration-boundary.md#tier-3-environment-knobs).
 
 ## Two halves: a code-owned catalog and stored values
 
 The design splits metadata from values, deliberately and clearly. The set of known keys, their
 types, groups, descriptions and defaults live in code, in `SystemPropertyCatalog`
-(`SystemPropertyCatalog.kt:36-151`). Only the value is stored, in `system_properties`
+(`SystemPropertyCatalog.kt:36-170`). Only the value is stored, in `system_properties`
 (`SystemProperty.kt:19-38`, table created by
 `services/karyo-app/src/main/resources/db/migration/auth/V1202__create_system_properties.sql`).
 
@@ -50,7 +50,7 @@ the stated lever if one appears is a short-TTL layer rather than widening the cl
 (`SystemPropertyService.kt:20-24`). That is a rationale worth keeping - it names the next move
 instead of leaving it to be rediscovered.
 
-## The 14 keys, and who they belong to
+## The 16 keys, and who they belong to
 
 | Key | Type | Group | Default | Owner-writable | Needs a commercial engine |
 |---|---|---|---|---|---|
@@ -68,11 +68,14 @@ instead of leaving it to be rediscovered.
 | `karyo.crossdock.expiry-action` | STRING | Cross-docking | `AUTO_PUTAWAY` | no | advanced-fulfillment |
 | `karyo.wave.auto-release` | BOOLEAN | Waves | `false` | yes | advanced-fulfillment |
 | `karyo.streaming.enabled` | BOOLEAN | Streaming | `false` | yes | advanced-fulfillment |
+| `karyo.threepl.rate.storage-per-ul-day` | STRING | 3PL Billing | none | no | karyo-b7-3pl-pack |
+| `karyo.threepl.currency` | STRING | 3PL Billing | `USD` | no | karyo-b7-3pl-pack |
 
-All fourteen are defined at `SystemPropertyCatalog.kt:38-146`. Ten of the fourteen are read only
-by a commercial engine - the last column names the entitlement it needs. Those engines are not
-in this repository, so in a free installation nothing reads those ten keys at all; the store
-neither knows nor says so - see [the configuration boundary](the-configuration-boundary.md).
+All sixteen are defined at `SystemPropertyCatalog.kt:38-165`. Twelve of the sixteen are read only
+by a commercial engine - the last column names the entitlement it needs, or for the two 3PL
+billing keys the engine that reads them. Those engines are not in this repository, so in a free
+installation nothing reads those twelve keys at all; the store neither knows nor says so - see
+[the configuration boundary](the-configuration-boundary.md).
 
 For the four keys whose consumers are in this repository, each catalog default matches the
 default the consumer passes at the call site: `OverReceiptGuard.kt:44-46`,
@@ -96,12 +99,13 @@ key's existence is public catalog metadata, so only the privilege is secret
 (`SystemPropertyResource.kt:97-103`).
 
 The ops-controlled keys are the over-receipt hard stop, the Slack webhook, the purge retention
-window, and the cross-dock staging window and expiry action. The catalog states the
-distinction it is drawing each time: box sizing and rung toggles are "a warehouse-ops
-preference with no security surface", while an audit horizon and "how long staged stock is
-allowed to sit and what happens when it doesn't move" are operational-safety policy
-(`SystemPropertyCatalog.kt:66-69`, `:89-93`, `:100-107`). That line is drawn consistently
-across all fourteen keys.
+window, the cross-dock staging window and expiry action, and the 3PL storage rate and billing
+currency. The catalog states the distinction it is drawing each time: box sizing and rung
+toggles are "a warehouse-ops preference with no security surface", while an audit horizon and
+"how long staged stock is allowed to sit and what happens when it doesn't move" are
+operational-safety policy, and the billing keys "ARE the numbers a goods owner is invoiced
+against" (`SystemPropertyCatalog.kt:66-69`, `:89-93`, `:100-107`, `:148-154`). That line is
+drawn consistently across all sixteen keys.
 
 **`secret = true`** makes a key write-only in the effective view: any present value is replaced
 by a mask literal for every principal, ops included, while the source label stays truthful

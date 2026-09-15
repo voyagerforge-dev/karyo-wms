@@ -79,20 +79,21 @@ key is unset. There is no caching, and the KDoc names the condition under which 
 
 That ladder is what makes a database row beat an environment variable, and it does so on purpose.
 
-`SystemPropertyCatalog.kt:37-147` holds fourteen catalogue entries across nine groups: receiving
+`SystemPropertyCatalog.kt:37-166` holds sixteen catalogue entries across ten groups: receiving
 (1), alerts (2), replenishment (1), packing (2), shipping (1), inventory (1), cross-docking (4),
-waves (1) and streaming (1). The alert, cross-docking, wave and streaming entries are read by
-commercial engines; in a free installation they are stored and returned, and read by nothing. Each
-entry carries a type, a group, a description, a default, and two flags:
+waves (1), streaming (1) and 3PL billing (2). The alert, packing, cross-docking, wave, streaming
+and 3PL billing entries are read by commercial engines; in a free installation they are stored and
+returned, and read by nothing. Each entry carries a type, a group, a description, a default, and
+two flags:
 
 - `secret` masks the value in the effective view for **every** principal including SYS, while
   in-process consumers still read the real value (`SystemPropertyCatalog.kt:13-18`). One key uses
   it: the Slack webhook URL.
 - `ownerWritable = false` restricts `PUT`/`DELETE` to an ops principal, so a goods-owner admin
   cannot store a client row above an operator-set hard stop
-  (`SystemPropertyCatalog.kt:19-24`, enforced at `SystemPropertyResource.kt:104-114`). Four keys use
-  it: over-receipt, the Slack webhook, purge retention, and the cross-dock staging window and expiry
-  action.
+  (`SystemPropertyCatalog.kt:19-24`, enforced at `SystemPropertyResource.kt:104-114`). Seven keys use
+  it: over-receipt, the Slack webhook, purge retention, the cross-dock staging window and expiry
+  action, and the 3PL storage rate and billing currency.
 
 The catalogue's own KDoc records that non-catalogue keys may still be stored - "extension/custom
 knobs" - and that they get no type validation and no metadata in the effective view
