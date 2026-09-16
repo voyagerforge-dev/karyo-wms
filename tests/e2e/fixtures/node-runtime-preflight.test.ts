@@ -6,12 +6,13 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  rmSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
-import { describe, it } from "node:test";
+import { afterEach, describe, it } from "node:test";
 
 /**
  * Behavioral coverage for scripts/lib/node-runtime.sh, the preflight shared by
@@ -36,6 +37,21 @@ function resolveFromPath(tool: string): string {
   throw new Error(`tool not found on PATH: ${tool}`);
 }
 
+/** Temporary directories created by the helpers, removed after every test. */
+const tempDirs: string[] = [];
+
+afterEach(() => {
+  while (tempDirs.length > 0) {
+    rmSync(tempDirs.pop()!, { recursive: true, force: true });
+  }
+});
+
+function makeTempDir(): string {
+  const dir = mkdtempSync(join(tmpdir(), "karyo-"));
+  tempDirs.push(dir);
+  return dir;
+}
+
 function declaredMajor(): string {
   return readFileSync(join(repoRoot, ".nvmrc"), "utf8").trim();
 }
@@ -52,7 +68,7 @@ function runPreflight({ version = "v24.21.0", nvmrc }: PreflightOptions = {}): {
   output: string;
   status: number;
 } {
-  const tmp = mkdtempSync(join(tmpdir(), "karyo-"));
+  const tmp = makeTempDir();
   const toolsDir = join(tmp, "tools");
   const nodeDir = join(tmp, "node");
   mkdirSync(toolsDir);
@@ -71,7 +87,7 @@ function runPreflight({ version = "v24.21.0", nvmrc }: PreflightOptions = {}): {
     path = `${nodeDir}:${toolsDir}`;
   }
 
-  const spawned = spawnSync("/bin/bash", [
+  const spawned = spawnSync("bash", [
     "-c",
     "source scripts/lib/node-runtime.sh && karyo_require_node",
   ], {
@@ -91,7 +107,7 @@ function runPreflight({ version = "v24.21.0", nvmrc }: PreflightOptions = {}): {
 
 /** Writes a KARYO_NVMRC file with the given content and returns its path. */
 function writeDeclaration(content: string): string {
-  const tmp = mkdtempSync(join(tmpdir(), "karyo-"));
+  const tmp = makeTempDir();
   const file = join(tmp, "nvmrc");
   writeFileSync(file, content);
   return file;
@@ -120,7 +136,7 @@ describe("node-runtime preflight (scripts/lib/node-runtime.sh)", () => {
         new RegExp(`Node ${version.replace(/\./g, "\\.")} is not supported`),
         `${version} rejection must name the version`,
       );
-      assert.match(output, /Node 24\.x/, `${version} rejection must state the supported line`);
+      assert.match(output, new RegExp(`Node ${declaredMajor()}\\.x`), `${version} rejection must state the supported line`);
       assert.match(output, /\.nvmrc/, `${version} rejection must point at .nvmrc`);
     }
   });
@@ -134,7 +150,7 @@ describe("node-runtime preflight (scripts/lib/node-runtime.sh)", () => {
         new RegExp(`Node ${version.replace(/\./g, "\\.")} is not supported`),
         `${version} rejection must name the version`,
       );
-      assert.match(output, /Node 24\.x/, `${version} rejection must state the supported line`);
+      assert.match(output, new RegExp(`Node ${declaredMajor()}\\.x`), `${version} rejection must state the supported line`);
       assert.match(output, /\.nvmrc/, `${version} rejection must point at .nvmrc`);
     }
   });
@@ -154,7 +170,7 @@ describe("node-runtime preflight (scripts/lib/node-runtime.sh)", () => {
   });
 
   it("fails closed when KARYO_NVMRC points at a missing file", () => {
-    const { output, status } = runPreflight({ nvmrc: join(mkdtempSync(join(tmpdir(), "karyo-")), "missing") });
+    const { output, status } = runPreflight({ nvmrc: join(makeTempDir(), "missing") });
     assert.notEqual(status, 0, "a missing declaration must be a hard failure");
     assert.match(output, /Node version declaration not found/);
   });

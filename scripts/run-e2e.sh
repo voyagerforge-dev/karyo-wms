@@ -28,7 +28,7 @@ Runs deterministic browser tests against BASE_URL (default http://localhost).
 An unavailable local target starts the configured Compose stack after environment validation.
 An unavailable remote target fails; it never starts a local stack.
 
-Required: the supported Node.js line declared once in .nvmrc (Node 24.x), browser dependencies and a disposable configured target.
+Required: the supported Node.js line declared once in .nvmrc, browser dependencies and a disposable configured target.
 KEYCLOAK_ADMIN_CLIENT_SECRET authenticates the permanent user-management service account.
 For a local target it may be read from the validated scripts/.env.prod; remote targets require
 it explicitly. There is no bootstrap-administrator fallback.

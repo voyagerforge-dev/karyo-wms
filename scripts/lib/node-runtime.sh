@@ -66,7 +66,7 @@ karyo_require_node() {
     fi
     raw=$(node --version 2>/dev/null || true)
     if ! [[ "$raw" =~ ^v([0-9]+)\.[0-9]+\.[0-9]+$ ]]; then
-        _node_runtime_err "Node version unreadable${raw:+(got: $raw)}. This project supports only Node $(karyo_required_node_major 2>/dev/null || printf '?').x (see .nvmrc); expected a vMAJOR.MINOR.PATCH version."
+        _node_runtime_err "Node version unreadable${raw:+ (got: $raw)}. This project supports only Node $(karyo_required_node_major 2>/dev/null || printf '?').x (see .nvmrc); expected a vMAJOR.MINOR.PATCH version."
         return 1
     fi
     major=${BASH_REMATCH[1]}
