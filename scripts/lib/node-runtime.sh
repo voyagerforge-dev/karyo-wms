@@ -37,11 +37,12 @@ _node_runtime_err() {
     return 0
 }
 
-# Prints the required Node.js major ("24") to stdout. Honors KARYO_NVMRC in
-# preference to the repo root .nvmrc (tests use this to exercise failure modes).
+# Prints the required Node.js major ("24") to stdout. The declaration is read
+# from the repo root .nvmrc, resolved from this file's own location, so there is
+# exactly one declaration and no environment override can shadow it.
 # Fails closed: a missing file or anything but a bare integer is an error.
 karyo_required_node_major() {
-    local nvmrc="${KARYO_NVMRC:-$_PROJECT_ROOT/.nvmrc}"
+    local nvmrc="$_PROJECT_ROOT/.nvmrc"
     local declared
     if [ ! -f "$nvmrc" ]; then
         _node_runtime_err "Node version declaration not found: $nvmrc. Declare the supported major once in .nvmrc and re-run."

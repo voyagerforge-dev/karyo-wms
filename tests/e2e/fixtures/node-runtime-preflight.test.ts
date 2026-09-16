@@ -56,15 +56,34 @@ function declaredMajor(): string {
   return readFileSync(join(repoRoot, ".nvmrc"), "utf8").trim();
 }
 
+/** Parses an .npmrc into effective key=value entries, dropping comments and blanks. */
+function effectiveNpmrc(dir: string): Record<string, string> {
+  const entries: Record<string, string> = {};
+  for (const line of readFileSync(join(repoRoot, dir, ".npmrc"), "utf8").split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (trimmed === "" || trimmed.startsWith("#") || trimmed.startsWith(";")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq === -1) continue;
+    entries[trimmed.slice(0, eq).trim()] = trimmed.slice(eq + 1).trim();
+  }
+  return entries;
+}
+
 type PreflightOptions = {
   /** What the fake `node` binary prints to stdout, or null to omit `node` from the PATH. */
   version?: string | null;
-  /** Overrides the declaration file the library reads (KARYO_NVMRC). */
-  nvmrc?: string;
+  /**
+   * Stage a temporary repo layout (the real scripts/lib/node-runtime.sh copied to
+   * <tmp>/scripts/lib/node-runtime.sh beside <tmp>/.nvmrc) instead of using the
+   * repo root. `nvmrc` null omits .nvmrc entirely, undefined writes "24", and a
+   * string writes that exact content. This drives missing/malformed declarations
+   * through the real interface without any environment override.
+   */
+  staged?: { nvmrc?: string | null };
 };
 
 /** Runs the real preflight in a trimmed environment and returns its output and exit status. */
-function runPreflight({ version = "v24.21.0", nvmrc }: PreflightOptions = {}): {
+function runPreflight({ version = "v24.21.0", staged }: PreflightOptions = {}): {
   output: string;
   status: number;
 } {
@@ -87,30 +106,35 @@ function runPreflight({ version = "v24.21.0", nvmrc }: PreflightOptions = {}): {
     path = `${nodeDir}:${toolsDir}`;
   }
 
+  let cwd = repoRoot;
+  if (staged !== undefined) {
+    const libDir = join(tmp, "scripts", "lib");
+    mkdirSync(libDir, { recursive: true });
+    writeFileSync(
+      join(libDir, "node-runtime.sh"),
+      readFileSync(join(repoRoot, "scripts/lib/node-runtime.sh"), "utf8"),
+    );
+    if (staged.nvmrc !== null) {
+      writeFileSync(join(tmp, ".nvmrc"), staged.nvmrc ?? "24\n");
+    }
+    cwd = tmp;
+  }
+
   const spawned = spawnSync("bash", [
     "-c",
     "source scripts/lib/node-runtime.sh && karyo_require_node",
   ], {
-    cwd: repoRoot,
+    cwd,
     stdio: ["ignore", "pipe", "pipe"],
     env: {
       ...process.env,
       PATH: path,
-      ...(nvmrc !== undefined ? { KARYO_NVMRC: nvmrc } : {}),
     },
   });
 
   const stdout = spawned.stdout?.toString() ?? "";
   const stderr = spawned.stderr?.toString() ?? "";
   return { output: `${stdout}${stderr}`.trim(), status: spawned.status ?? -1 };
-}
-
-/** Writes a KARYO_NVMRC file with the given content and returns its path. */
-function writeDeclaration(content: string): string {
-  const tmp = makeTempDir();
-  const file = join(tmp, "nvmrc");
-  writeFileSync(file, content);
-  return file;
 }
 
 describe("node-runtime preflight (scripts/lib/node-runtime.sh)", () => {
@@ -169,14 +193,20 @@ describe("node-runtime preflight (scripts/lib/node-runtime.sh)", () => {
     assert.match(output, /Node\.js not found/);
   });
 
-  it("fails closed when KARYO_NVMRC points at a missing file", () => {
-    const { output, status } = runPreflight({ nvmrc: join(makeTempDir(), "missing") });
+  it("accepts the supported line through a staged repo layout", () => {
+    const { output, status } = runPreflight({ staged: {} });
+    assert.equal(status, 0, `preflight should pass: ${output}`);
+    assert.equal(output, "");
+  });
+
+  it("fails closed when the declaration file is missing (staged layout)", () => {
+    const { output, status } = runPreflight({ staged: { nvmrc: null } });
     assert.notEqual(status, 0, "a missing declaration must be a hard failure");
     assert.match(output, /Node version declaration not found/);
   });
 
-  it("fails closed when KARYO_NVMRC is not a bare integer (lts/*)", () => {
-    const { output, status } = runPreflight({ nvmrc: writeDeclaration("lts/*\n") });
+  it("fails closed when the staged .nvmrc is not a bare integer (lts/*)", () => {
+    const { output, status } = runPreflight({ staged: { nvmrc: "lts/*\n" } });
     assert.notEqual(status, 0, "a non-integer declaration must be a hard failure");
     assert.match(output, /not a bare integer/);
   });
@@ -194,17 +224,36 @@ describe("node-runtime preflight (scripts/lib/node-runtime.sh)", () => {
       assert.equal(manifest.engines.node, expected, `${dir}/package.json engines.node`);
       const lockfile = JSON.parse(readFileSync(join(repoRoot, dir, "package-lock.json"), "utf8"));
       assert.equal(lockfile.packages[""].engines.node, expected, `${dir}/package-lock.json root engines.node`);
-      assert.match(readFileSync(join(repoRoot, dir, ".npmrc"), "utf8"), /engine-strict=true/, `${dir}/.npmrc`);
+      // Effective .npmrc semantics: only actual key=value entries count, so a
+      // commented-out `#engine-strict=true` cannot satisfy the assertion.
+      assert.equal(effectiveNpmrc(dir)["engine-strict"], "true", `${dir}/.npmrc must set engine-strict=true`);
     }
   });
 
-  it("runs both nginx builder stages on the declared major", () => {
+  it("runs both nginx builder stages on exactly the declared major", () => {
     const declared = declaredMajor();
     const dockerfile = readFileSync(join(repoRoot, "infrastructure/docker/Dockerfile.nginx"), "utf8");
-    const majors = [...dockerfile.matchAll(/node:(\d+)-alpine/g)].map((match) => match[1]);
-    assert.equal(majors.length, 2, "both builder stages must declare node:<major>-alpine");
-    for (const major of majors) {
-      assert.equal(major, declared, `builder stage major must equal .nvmrc`);
+    // Parse actual FROM instructions; comments are not stages. Take the two
+    // builder stages by their AS alias and check their image references.
+    const stages: { image: string; alias: string }[] = [];
+    for (const line of dockerfile.split(/\r?\n/)) {
+      const match = /^\s*FROM\s+(\S+)(?:\s+AS\s+([A-Za-z0-9_.-]+))?\s*$/i.exec(line);
+      if (match !== null) stages.push({ image: match[1], alias: match[2] ?? "" });
+    }
+    const builders = stages.filter(
+      (stage) => stage.alias === "builder" || stage.alias === "mobile-builder",
+    );
+    assert.equal(builders.length, 2, "the two nginx builder stages must be FROM instructions with AS builder/mobile-builder");
+    for (const stage of builders) {
+      const colon = stage.image.lastIndexOf(":");
+      const repository = colon === -1 ? "" : stage.image.slice(0, colon);
+      const tag = colon === -1 ? stage.image : stage.image.slice(colon + 1);
+      assert.equal(
+        repository.slice(repository.lastIndexOf("/") + 1),
+        "node",
+        `${stage.alias} stage must build from a node image, got ${stage.image}`,
+      );
+      assert.equal(tag, `${declared}-alpine`, `${stage.alias} stage must be node:${declared}-alpine, got ${stage.image}`);
     }
   });
 });

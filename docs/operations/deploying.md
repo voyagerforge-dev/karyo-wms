@@ -34,7 +34,7 @@ Stage 1 of the script checks all of these and reports what is missing
 (`deploy-server.sh:520-576`).
 
 The list is required even when nothing is being built. `--quick` skips Stages 2-4, but Stage 1
-runs first regardless (`deploy-server.sh:499-501,592-596`), so a host that only starts images
+runs first regardless (`deploy-server.sh:499-501,582-586`), so a host that only starts images
 built elsewhere still needs a JDK and a Node toolchain.
 
 ### One Node line, declared once
@@ -102,7 +102,7 @@ walks through that.
 
 The deploy script reads one file, `scripts/.env.prod`. It is created mode 0600 from
 `scripts/.env.prod.example` if absent, and the mode is re-enforced on every run
-(`deploy-server.sh:243-252,692-698`). Edit only this file; every deploy regenerates the
+(`deploy-server.sh:243-252,682-688`). Edit only this file; every deploy regenerates the
 per-service files derived from it (see
 [Rendering least-privilege container environments](#rendering-least-privilege-container-environments)).
 
@@ -215,7 +215,7 @@ it from `scripts/.env.prod` and exports it before starting containers
 (`deploy-server.sh:695-702`).
 
 `GRADLE_OPTS` is read from the **invoking shell** at Stage 2, before the environment file is read
-at Stage 5 (`deploy-server.sh:591,690-701`). Export it before running the script. **Known
+at Stage 5 (`deploy-server.sh:591,680-691`). Export it before running the script. **Known
 defect.** Both environment templates and the script's own comment present `GRADLE_OPTS` as an
 environment-file setting (`scripts/.env.prod.example:77`, `scripts/.env.prod.cloud-example:54`),
 and a value set only there never reaches the build.
