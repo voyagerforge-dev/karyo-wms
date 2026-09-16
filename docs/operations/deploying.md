@@ -20,9 +20,9 @@ that point at a deployment guide by file name mean this document.
 
 - **Java 21 or newer, as a JDK.** `javac` must be available; a JRE fails. The script honours
   `JAVA_HOME` first (`deploy-server.sh:572-578`).
-- **Node.js 22.12 or newer**, for the frontend builds and for `--validate-env`, which uses Node's
-  WHATWG URL parser to validate the public origin. `scripts/run-e2e.sh` separately requires Node
-  22.6 or newer for its own target resolver.
+- **Node.js 24.x**, the single supported line, declared once in `.nvmrc` and enforced by both
+  operator scripts through `scripts/lib/node-runtime.sh`. It is needed for the frontend builds
+  and for `--validate-env`, which uses Node's WHATWG URL parser to validate the public origin.
 - **Python 3**, for environment validation and rendering.
 - **Docker with the Compose plugin**, or **Podman with `podman-compose`**.
 - **Git.**
@@ -37,23 +37,17 @@ The list is required even when nothing is being built. `--quick` skips Stages 2-
 runs first regardless (`deploy-server.sh:509-511,592-596`), so a host that only starts images
 built elsewhere still needs a JDK and a Node toolchain.
 
-### The Node floor does not match the floor the build needs
+### One Node line, declared once
 
-`deploy-server.sh:103-118` rejects a host Node whose **major** version is below 22, and the
-comment explains why the check exists at all: npm only warns on an engine mismatch, so an older
-Node would install happily and fail deep inside the build with an unrelated-looking error.
-
-The real floor is 22.12. Vite 7, resolved in both frontend lockfiles, declares
-`engines.node: ^20.19.0 || >=22.12.0`, while `frontend/web/package.json:6-8` declares only
-`node: ">=22"`, and the deploy script's check cites that declaration. **Known defect.** Node 22.0
-through 22.11 passes the host check, passes `npm ci` with a warning, and then fails inside the
-Vite build, after Stage 2 has already compiled the backend. Install 22.12 or newer rather than
-relying on the check. The nginx image's builder stages use `node:22-alpine`, which resolves above
-the floor (`infrastructure/docker/Dockerfile.nginx:1,9`).
-
-The floor PWA has it worse: `frontend/mobile/package.json` declares no `engines` field at all,
-and the deploy script builds it (`deploy-server.sh:631-641`) under a check whose message names
-only `frontend/web`. **Known defect.**
+`.nvmrc` at the repository root declares the one supported Node.js major (`24`). nvm reads it
+directly, CI's `setup-node` consumes it through `node-version-file: .nvmrc`, and both operator
+scripts source `scripts/lib/node-runtime.sh`, which accepts exactly that major and fails closed on
+a missing node, an unreadable version and a missing or malformed declaration. The deploy
+preflight runs it in Stage 1 and on the `--validate-env` path; `scripts/run-e2e.sh` runs it before
+resolving the E2E target. npm only warns on an engine mismatch, so the package manifests mirror
+the line as `engines.node: ^24.0.0` with `engine-strict=true` (`.npmrc`), and the nginx image's
+builder stages use `node:24-alpine` (`infrastructure/docker/Dockerfile.nginx:1,9`);
+`tests/e2e/fixtures/node-runtime-preflight.test.ts` keeps every mirror equal to `.nvmrc`.
 
 ### The Java check does not do what its message says
 
@@ -872,12 +866,12 @@ about rather than enforced, because both need root:
 ## Cloud hosts
 
 The same script deploys to a cloud virtual machine. Install Docker with the Compose plugin, a JDK
-21, Node.js 22.12 or newer, Python 3, Git and, if used, `cloudflared`; clone the repository;
+21, Node.js 24.x (the line declared once in `.nvmrc`), Python 3, Git and, if used, `cloudflared`; clone the repository;
 create `scripts/.env.prod` from `scripts/.env.prod.cloud-example`, whose resource limits suit a
 24 GB four-core ARM64 host; export `GRADLE_OPTS` for a larger build heap; and run
 `./scripts/deploy-server.sh`. Every base image in the stack has an ARM64 variant:
 `postgres:16-alpine`, `quay.io/keycloak/keycloak:26.0`, `eclipse-temurin:21-jre-alpine`,
-`node:22-alpine` and `nginx:1.30.4-alpine`.
+`node:24-alpine` and `nginx:1.30.4-alpine`.
 
 ## Every deploy is an outage
 

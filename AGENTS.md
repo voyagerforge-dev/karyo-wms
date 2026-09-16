@@ -73,9 +73,13 @@ Cross-layer couplings an agent will miss from the file they opened. The module g
   fifth `docker build -f infrastructure/docker/Dockerfile.service` in a new file is invisible to
   the PR audit. The audit checks `--timestamp 0` / `SOURCE_DATE_EPOCH=0` on those known sites, not
   tree-wide.
-- **Node 22 is three places.** `frontend/web/package.json` `engines.node` (>= 22), both builders in
-  `infrastructure/docker/Dockerfile.nginx` (`node:22-alpine`), and the frontend/mobile CI jobs.
-  Mobile declares no `engines`.
+- **Node 24 is declared once and mirrored four ways.** `.nvmrc` (repo root) is the one
+  declaration. `scripts/lib/node-runtime.sh` reads it for both the deploy and E2E preflights
+  (accepting exactly that major); the three package manifests mirror it as `engines.node
+  ^24.0.0` with `engine-strict=true` in each `.npmrc` and in the lockfile root; CI resolves it
+  through `setup-node` `node-version-file: .nvmrc`; and the nginx builder stages use
+  `node:24-alpine`. `tests/e2e/fixtures/node-runtime-preflight.test.ts` keeps every mirror equal
+  to `.nvmrc`.
 - **Vendor public key has one home:**
   `libs/karyo-license/src/main/resources/com/karyo/license/vendor-public-key.txt`, read by
   `VendorKey`. Do not duplicate the bytes.

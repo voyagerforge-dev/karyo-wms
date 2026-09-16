@@ -14,7 +14,7 @@ is the ten-minute version of the whole.
 | Tool | Version | Used for |
 |---|---|---|
 | JDK, including `javac` | 21 | Backend build and tests |
-| Node.js and npm | 22.12 or later | Both front ends and the browser-test helpers |
+| Node.js and npm | 24.x (the one line declared in `.nvmrc`) | Both front ends and the browser-test helpers |
 | Python | 3 | The deploy script's configuration validation |
 | Docker, or Podman with podman-compose | Current stable | Dev Services, the development Keycloak, the deployed stack |
 | Git | 2.x | Source control |

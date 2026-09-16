@@ -71,8 +71,9 @@ product as it behaves today, defects included.
 **Using a Karyo someone installed for you?** Start with the [user guide](docs/user-guide/README.md):
 it begins with your first sign-in and which of the two interfaces you belong on.
 
-**Installing it?** You need a JDK 21 (the compiler, not only a runtime), Node.js 22.12 or later,
-Python 3, and Docker with Compose or Podman with podman-compose. Build the backend with the
+**Installing it?** You need a JDK 21 (the compiler, not only a runtime), Node.js 24 (the single
+supported line, declared once in `.nvmrc`), Python 3, and Docker with Compose or Podman with
+podman-compose. Build the backend with the
 checked-in wrapper:
 
 ```bash

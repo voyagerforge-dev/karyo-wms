@@ -100,22 +100,9 @@ check_command() {
     log_ok "$name: $version"
 }
 
-# Stage 3 runs `npm ci` in frontend/web on the HOST (the container builds have their own pinned
-# Node), and that package.json declares engines.node >= 22. npm only *warns* on an engine
-# mismatch, so an older host Node would sail past install and fail deep inside the build with an
-# unrelated-looking error. Reject it here, where the message can name the version.
-# scripts/run-e2e.sh enforces the same major for its own reason (22.6+ for
-# --experimental-strip-types), so the two checks agree on the floor.
-NODE_MIN_MAJOR=22
-check_node_version() {
-    local raw major
-    raw=$(node --version 2>/dev/null || true)   # e.g. v22.22.2
-    major=${raw#v}; major=${major%%.*}
-    if ! [[ "$major" =~ ^[0-9]+$ ]] || [ "$major" -lt "$NODE_MIN_MAJOR" ]; then
-        log_err "Node ${raw:-(version unreadable)} is too old. The frontend build needs Node ${NODE_MIN_MAJOR}+ (frontend/web declares engines.node >= ${NODE_MIN_MAJOR}); upgrade Node and re-run."
-        return 1
-    fi
-}
+# The deploy and E2E preflights share one Node-line source: scripts/lib/node-runtime.sh reads
+# the .nvmrc declaration (the same file nvm and CI's setup-node consume) and accepts exactly
+# that major, failing closed on an unreadable version.
 
 wait_for_health() {
     local name=$1
@@ -495,6 +482,8 @@ check_ports() {
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_ROOT"
+# shellcheck source=scripts/lib/node-runtime.sh
+. "$SCRIPT_DIR/lib/node-runtime.sh"
 
 echo -e "${BLUE}Karyo WMS Deploy${NC}"
 echo "Project root: $PROJECT_ROOT"
@@ -502,6 +491,7 @@ echo "Project root: $PROJECT_ROOT"
 if [ -n "$VALIDATE_ENV_FILE" ]; then
     check_command "Python" python3 || exit 1
     check_command "Node.js" node || exit 1
+    karyo_require_node || exit 1
     validate_env "$VALIDATE_ENV_FILE"
     exit 0
 fi
@@ -532,7 +522,7 @@ log_stage 1 "Checking prerequisites"
 MISSING=0
 
 check_command "Java" java || MISSING=1
-check_command "Node.js" node && check_node_version || MISSING=1
+check_command "Node.js" node && karyo_require_node || MISSING=1
 check_command "Python" python3 || MISSING=1
 # cloudflared is only needed for public access via Cloudflare Tunnel, not for the deploy itself
 check_command "cloudflared" cloudflared || log_warn "cloudflared not found — stack will be local-only"

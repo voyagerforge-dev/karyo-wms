@@ -83,7 +83,7 @@ the third-party inventory copied beside `NOTICE` is what discloses them.
 | Site | Base | Pinning |
 |---|---|---|
 | `Dockerfile.service:1` | `eclipse-temurin:21-jre-alpine` | floating tag |
-| `Dockerfile.nginx:1,9` | `node:22-alpine` (both builder stages) | floating tag |
+| `Dockerfile.nginx:1,9` | `node:24-alpine` (both builder stages) | floating tag |
 | `Dockerfile.nginx:17` | `nginx:1.30.4-alpine` | exact tag |
 | `docker-compose.prod.yml:8,31` | `postgres:16-alpine`, `keycloak:26.0` | floating minor tag |
 
