@@ -28,7 +28,7 @@ Runs deterministic browser tests against BASE_URL (default http://localhost).
 An unavailable local target starts the configured Compose stack after environment validation.
 An unavailable remote target fails; it never starts a local stack.
 
-Required: Node.js 22.6+, browser dependencies and a disposable configured target.
+Required: the supported Node.js line declared once in .nvmrc, browser dependencies and a disposable configured target.
 KEYCLOAK_ADMIN_CLIENT_SECRET authenticates the permanent user-management service account.
 For a local target it may be read from the validated scripts/.env.prod; remote targets require
 it explicitly. There is no bootstrap-administrator fallback.
@@ -71,27 +71,15 @@ log_err()  { echo -e "${RED}[e2e]${NC} $*"; }
 # The target is resolved through tests/e2e/fixtures/provisioning-target.ts -- the same module the
 # Playwright fixtures call before reading KEYCLOAK_ADMIN_CLIENT_SECRET. One implementation, so
 # this wrapper and a direct `npx playwright test` cannot drift apart on what a permitted stack is.
-# A missing or too-old toolchain is a toolchain problem, and saying anything else sends the
-# operator to debug their own BASE_URL over a Node version. The interpreter is checked before it
-# is used, so a non-zero exit below genuinely means the target was rejected.
-NODE_MIN_MAJOR=22
-NODE_MIN_MINOR=6
-require_node() {
-    if ! command -v node &>/dev/null; then
-        log_err "Node.js not found. scripts/run-e2e.sh needs Node ${NODE_MIN_MAJOR}.${NODE_MIN_MINOR}+ to resolve the E2E target; install it and rerun."
-        exit 1
-    fi
-    local raw major minor
-    raw=$(node --version 2>/dev/null)          # e.g. v22.22.2
-    major=${raw#v}; major=${major%%.*}
-    minor=${raw#v*.}; minor=${minor%%.*}
-    if [ "$major" -lt "$NODE_MIN_MAJOR" ] ||
-       { [ "$major" -eq "$NODE_MIN_MAJOR" ] && [ "$minor" -lt "$NODE_MIN_MINOR" ]; }; then
-        log_err "Node ${raw} is too old. scripts/run-e2e.sh needs Node ${NODE_MIN_MAJOR}.${NODE_MIN_MINOR}+ for --experimental-strip-types, which resolves the E2E target; upgrade Node and rerun."
-        exit 1
-    fi
-}
-require_node
+
+# The deploy and E2E preflights share one Node-line source: scripts/lib/node-runtime.sh reads
+# the .nvmrc declaration (the same file nvm and CI's setup-node consume) and accepts exactly
+# that major. A missing or unsupported toolchain is a toolchain problem, and saying anything
+# else sends the operator to debug their own BASE_URL over a Node version. The interpreter is
+# checked before it is used, so a non-zero exit below genuinely means the target was rejected.
+# shellcheck source=scripts/lib/node-runtime.sh
+. "$SCRIPT_DIR/lib/node-runtime.sh"
+karyo_require_node || exit 1
 
 target_args=()
 if [ -n "${BASE_URL:-}" ]; then

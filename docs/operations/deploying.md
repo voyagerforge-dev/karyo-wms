@@ -9,7 +9,7 @@ Derived from `scripts/deploy-server.sh`, `infrastructure/docker/docker-compose.p
 `scripts/render_compose_env.py`, `scripts/validate_public_origin.py`,
 `scripts/validate_credential.py` and `scripts/migrate_keycloak_realm.py`.
 
-`scripts/deploy-server.sh` is 865 lines and is the whole installation mechanism. There is no
+`scripts/deploy-server.sh` is 856 lines and is the whole installation mechanism. There is no
 installer, no configuration management and no orchestrator: Compose on one host is the supported
 deployment ([ADR 0022](../architecture/decisions/0022-compose-four-container-deployment.md)).
 
@@ -19,45 +19,39 @@ that point at a deployment guide by file name mean this document.
 ## What has to be on the host
 
 - **Java 21 or newer, as a JDK.** `javac` must be available; a JRE fails. The script honours
-  `JAVA_HOME` first (`deploy-server.sh:572-578`).
-- **Node.js 22.12 or newer**, for the frontend builds and for `--validate-env`, which uses Node's
-  WHATWG URL parser to validate the public origin. `scripts/run-e2e.sh` separately requires Node
-  22.6 or newer for its own target resolver.
+  `JAVA_HOME` first (`deploy-server.sh:562-568`).
+- **Node.js 24.x**, the single supported line, declared once in `.nvmrc` and enforced by both
+  operator scripts through `scripts/lib/node-runtime.sh`. It is needed for the frontend builds
+  and for `--validate-env`, which uses Node's WHATWG URL parser to validate the public origin.
 - **Python 3**, for environment validation and rendering.
 - **Docker with the Compose plugin**, or **Podman with `podman-compose`**.
 - **Git.**
 - **`cloudflared`**, only if the stack is exposed through a Cloudflare Tunnel (see
   [Public access](#public-access)). Its absence is a warning, not a failure
-  (`deploy-server.sh:537-538`).
+  (`deploy-server.sh:527-528`).
 
 Stage 1 of the script checks all of these and reports what is missing
-(`deploy-server.sh:530-586`).
+(`deploy-server.sh:520-576`).
 
 The list is required even when nothing is being built. `--quick` skips Stages 2-4, but Stage 1
-runs first regardless (`deploy-server.sh:509-511,592-596`), so a host that only starts images
+runs first regardless (`deploy-server.sh:499-501,582-586`), so a host that only starts images
 built elsewhere still needs a JDK and a Node toolchain.
 
-### The Node floor does not match the floor the build needs
+### One Node line, declared once
 
-`deploy-server.sh:103-118` rejects a host Node whose **major** version is below 22, and the
-comment explains why the check exists at all: npm only warns on an engine mismatch, so an older
-Node would install happily and fail deep inside the build with an unrelated-looking error.
-
-The real floor is 22.12. Vite 7, resolved in both frontend lockfiles, declares
-`engines.node: ^20.19.0 || >=22.12.0`, while `frontend/web/package.json:6-8` declares only
-`node: ">=22"`, and the deploy script's check cites that declaration. **Known defect.** Node 22.0
-through 22.11 passes the host check, passes `npm ci` with a warning, and then fails inside the
-Vite build, after Stage 2 has already compiled the backend. Install 22.12 or newer rather than
-relying on the check. The nginx image's builder stages use `node:22-alpine`, which resolves above
-the floor (`infrastructure/docker/Dockerfile.nginx:1,9`).
-
-The floor PWA has it worse: `frontend/mobile/package.json` declares no `engines` field at all,
-and the deploy script builds it (`deploy-server.sh:631-641`) under a check whose message names
-only `frontend/web`. **Known defect.**
+`.nvmrc` at the repository root declares the one supported Node.js major (`24`). nvm reads it
+directly, CI's `setup-node` consumes it through `node-version-file: .nvmrc`, and both operator
+scripts source `scripts/lib/node-runtime.sh`, which accepts exactly that major and fails closed on
+a missing node, an unreadable version and a missing or malformed declaration. The deploy
+preflight runs it in Stage 1 and on the `--validate-env` path; `scripts/run-e2e.sh` runs it before
+resolving the E2E target. npm only warns on an engine mismatch, so the package manifests mirror
+the line as `engines.node: ^24.0.0` with `engine-strict=true` (`.npmrc`), and the nginx image's
+builder stages use `node:24-alpine` (`infrastructure/docker/Dockerfile.nginx:1,9`);
+`tests/e2e/fixtures/node-runtime-preflight.test.ts` keeps every mirror equal to `.nvmrc`.
 
 ### The Java check does not do what its message says
 
-`deploy-server.sh:581` parses the version with
+`deploy-server.sh:571` parses the version with
 
 ```
 JAVA_VERSION=$(java -version 2>&1 | head -1 | sed 's/.*"\([0-9]*\)\..*/\1/')
@@ -68,7 +62,7 @@ with no dot, the substitution does not match, and `JAVA_VERSION` becomes the who
 `[ "$JAVA_VERSION" -lt 21 ]` then fails with "integer expression expected" and returns 2, which
 the enclosing `if` reads as false. **Known defect.** The guard is skipped, and on a Java 17 GA
 build the script prints `Java version openjdk version "17" 2021-09-14 meets minimum (21)`
-(`deploy-server.sh:580-586`).
+(`deploy-server.sh:570-576`).
 
 ## Quick start
 
@@ -108,7 +102,7 @@ walks through that.
 
 The deploy script reads one file, `scripts/.env.prod`. It is created mode 0600 from
 `scripts/.env.prod.example` if absent, and the mode is re-enforced on every run
-(`deploy-server.sh:256-265,692-698`). Edit only this file; every deploy regenerates the
+(`deploy-server.sh:243-252,682-688`). Edit only this file; every deploy regenerates the
 per-service files derived from it (see
 [Rendering least-privilege container environments](#rendering-least-privilege-container-environments)).
 
@@ -146,48 +140,48 @@ and none may be relaxed into a wildcard:
 
 ### What the validator refuses
 
-`validate_env` (`deploy-server.sh:268-467`) is the substantial part of the script, and the only
+`validate_env` (`deploy-server.sh:255-454`) is the substantial part of the script, and the only
 thing between an operator and a stack that starts with the wrong credentials:
 
 - **Syntax.** Every non-comment line must be `NAME=value` with no `export` and no whitespace
   around the name or the equals sign, and the offending line number is named
-  (`deploy-server.sh:296-305`).
+  (`deploy-server.sh:283-292`).
 - **Exactly once.** A required variable assigned twice is refused, because the last assignment
-  silently wins (`deploy-server.sh:308-319`).
+  silently wins (`deploy-server.sh:295-306`).
 - **Literal values.** A value containing whitespace, a quote, a `#`, a `$` or a backslash is
   refused, so nothing in the file depends on shell interpolation the readers do not perform
-  (`deploy-server.sh:321-331`).
+  (`deploy-server.sh:308-318`).
 - **Placeholders.** `CHANGE_ME`, `karyo.example.com` and the literal `dev-backend-secret` are
-  each named individually (`deploy-server.sh:332-342`).
+  each named individually (`deploy-server.sh:319-329`).
 - **Consistency.** `DB_USERNAME`, `POSTGRES_USER` and `KC_DB_USERNAME` must name the same role,
   and the three password variables must carry the same value, because one PostgreSQL role serves
-  both Karyo and Keycloak (`deploy-server.sh:409-416`).
+  both Karyo and Keycloak (`deploy-server.sh:396-403`).
 - **Strength**, through `scripts/validate_credential.py`: 16 characters for the database and
   bootstrap passwords, 32 for `KEYCLOAK_ADMIN_CLIENT_SECRET` and `OIDC_SECRET`, and rejection of
   dictionary, predictable, repeated and username-derived values. Existing role passwords are not
-  grandfathered (`deploy-server.sh:417-433`).
+  grandfathered (`deploy-server.sh:404-420`).
 - **Distinctness.** The admin client secret must differ from the bootstrap password and the OIDC
-  secret; the OIDC secret must differ from the bootstrap password (`deploy-server.sh:434-440`).
+  secret; the OIDC secret must differ from the bootstrap password (`deploy-server.sh:421-427`).
 - **URLs**, through `scripts/validate_public_origin.py`, which shells out to Node's WHATWG `URL`
   parser so that the accepted origin is the one a browser would compute
   (`validate_public_origin.py:11-28`). Its exit code 3 is distinct from 2 so that a missing Node
   is reported as a missing tool rather than filed under the operator's configuration
-  (`validate_public_origin.py:36-43`, `deploy-server.sh:441-455`).
+  (`validate_public_origin.py:36-43`, `deploy-server.sh:428-442`).
 - **The maintenance port.** `KARYO_KEYCLOAK_MAINTENANCE_PORT` must be an integer from 1 through
-  65535 and may be assigned at most once (`deploy-server.sh:393-407`).
+  65535 and may be assigned at most once (`deploy-server.sh:380-394`).
 
 The whole validator is reachable on its own with `--validate-env FILE`, which exits before
-anything is built or started (`deploy-server.sh:502-507`). Success validates the values in the
+anything is built or started (`deploy-server.sh:491-497`). Success validates the values in the
 file. It proves nothing about the target host, or about the password a persisted database role
 actually holds.
 
 `KEYCLOAK_URL` is optional and defaults to `/auth` for validation only - the default is never
-written back (`deploy-server.sh:385-392`). **Known defect.** If an operator removes the line, the
+written back (`deploy-server.sh:372-379`). **Known defect.** If an operator removes the line, the
 rendered nginx environment file is empty (`render_compose_env.py:47`), `envsubst` replaces the
 unset variable with an empty string, and the entrypoint's guard - which looks for an
 unsubstituted `${KEYCLOAK_URL}` token - has nothing to find
 (`infrastructure/docker/nginx/docker-entrypoint.sh:7-22`). nginx starts healthy, Stage 8's SPA
-probe sees `/` return 200 (`deploy-server.sh:832-838`), the deploy reports success, and both
+probe sees `/` return 200 (`deploy-server.sh:822-828`), the deploy reports success, and both
 front ends ship with an empty Keycloak base URL, so nobody can sign in. Keep `KEYCLOAK_URL=/auth`.
 
 ### Optional variables
@@ -214,14 +208,14 @@ only after observing the complete stack under representative load.
 |---|---|---|---|
 | `APP_MEM_LIMIT` | `1536m` | `4g` | `karyo-app` container memory (`docker-compose.prod.yml:86-87`) |
 | `JAVA_OPTS` | `-Xms128m -Xmx1024m ...` | `-Xms256m -Xmx3g ...` | JVM flags inside the application container (`infrastructure/docker/Dockerfile.service:72-73`) |
-| `GRADLE_OPTS` | `-Xmx512m -XX:MaxMetaspaceSize=256m` | `-Xmx2g -XX:MaxMetaspaceSize=512m` | Gradle heap for the Stage 2 build (`deploy-server.sh:600-601`) |
+| `GRADLE_OPTS` | `-Xmx512m -XX:MaxMetaspaceSize=256m` | `-Xmx2g -XX:MaxMetaspaceSize=512m` | Gradle heap for the Stage 2 build (`deploy-server.sh:590-591`) |
 
 `APP_MEM_LIMIT` reaches Compose through the shell rather than an `env_file`, so the script reads
 it from `scripts/.env.prod` and exports it before starting containers
-(`deploy-server.sh:705-712`).
+(`deploy-server.sh:695-702`).
 
 `GRADLE_OPTS` is read from the **invoking shell** at Stage 2, before the environment file is read
-at Stage 5 (`deploy-server.sh:601,690-701`). Export it before running the script. **Known
+at Stage 5 (`deploy-server.sh:591,680-691`). Export it before running the script. **Known
 defect.** Both environment templates and the script's own comment present `GRADLE_OPTS` as an
 environment-file setting (`scripts/.env.prod.example:77`, `scripts/.env.prod.cloud-example:54`),
 and a value set only there never reaches the build.
@@ -253,10 +247,10 @@ All four are gitignored by name (`.gitignore:45-50`) and excluded from every ima
 Keycloak creates its bootstrap administrator from `KC_BOOTSTRAP_ADMIN_USERNAME` and
 `KC_BOOTSTRAP_ADMIN_PASSWORD` only when its database is fresh. Whether it is fresh is decided by
 the database, not by a flag: after PostgreSQL is healthy the script queries Keycloak's own schema
-for a `master` realm row (`deploy-server.sh:203-226`). On a fresh database the deploy refuses to
+for a `master` realm row (`deploy-server.sh:190-213`). On a fresh database the deploy refuses to
 start Keycloak unless both values are supplied; on an initialised one it warns that they are inert
-and should be removed (`deploy-server.sh:761-776`). The production realm import defines no
-application users (`deploy-server.sh:855`).
+and should be removed (`deploy-server.sh:751-766`). The production realm import defines no
+application users (`deploy-server.sh:845`).
 
 After the first deployment:
 
@@ -323,7 +317,7 @@ PostgreSQL applies `POSTGRES_PASSWORD` only while initialising a fresh data dire
 persisted role, and the deploy script does not run `ALTER ROLE` for you. It does make the
 mismatch loud: `verify_postgres_role_password` runs after PostgreSQL is up and **before** Keycloak
 or the application start, and halts with a message saying the environment was updated but the
-live role was not rotated (`deploy-server.sh:228-248`). A password that fails the credential
+live role was not rotated (`deploy-server.sh:215-235`). A password that fails the credential
 policy is rejected before any container starts.
 
 To rotate the live password:
@@ -687,7 +681,7 @@ stack's project, ports, images and storage first (`deploy-server.sh:7`).
 ### Selecting the deployment
 
 The script defaults to Compose project `karyo-prod`, application image `karyo/karyo-app:latest`
-and nginx image `karyo/nginx:latest` (`deploy-server.sh:520-524`). For a second, isolated
+and nginx image `karyo/nginx:latest` (`deploy-server.sh:510-514`). For a second, isolated
 rehearsal on a shared runtime, inspect the existing resources and choose an unused project name,
 image tags and host port:
 
@@ -703,13 +697,13 @@ Export `COMPOSE_PROJECT_NAME`, `KARYO_APP_IMAGE` and `KARYO_NGINX_IMAGE` in the 
 the script does not read these three from `scripts/.env.prod`. Keep them set for every deploy,
 restart, maintenance and browser-test invocation, including direct Compose commands. Give this
 checkout its own mode-0600 environment file with the matching origin and hostname settings. An
-explicit `NGINX_HTTP_PORT` in that file overrides the exported port (`deploy-server.sh:713-717`),
+explicit `NGINX_HTTP_PORT` in that file overrides the exported port (`deploy-server.sh:703-707`),
 so keep the two aligned.
 
 Compose project names isolate containers, networks and volumes. Explicit image tags avoid
 overwriting another stack's tags; a project name alone changes neither images, browser origin nor
 host port. Health and database-password probes select containers by Compose project and service
-labels on both Docker Compose and `podman-compose` (`deploy-server.sh:164-170`). The script never
+labels on both Docker Compose and `podman-compose` (`deploy-server.sh:151-157`). The script never
 prunes images, including untagged ones: clean-up is an explicit operator action. Never reuse
 another deployment's identities, storage or credentials. `BASE_URL` selects the browser-test
 target for `scripts/run-e2e.sh`, not the deployment origin.
@@ -727,36 +721,36 @@ target for `scripts/run-e2e.sh`, not the deployment origin.
 Flags combine: `./scripts/deploy-server.sh --quick --reset-db` restarts on a fresh database.
 
 `--reset-db` runs `compose down -v` after two warning lines and no confirmation prompt
-(`deploy-server.sh:739-743`). Use it only for an explicitly disposable deployment, and never to
+(`deploy-server.sh:729-733`). Use it only for an explicitly disposable deployment, and never to
 hide a Flyway checksum mismatch on retained data.
 
 ## The eight stages
 
 1. **Check prerequisites** - the host tools above, the container runtime's responsiveness, and
-   on Podman the linger and unprivileged-port settings (`deploy-server.sh:530-586`).
+   on Podman the linger and unprivileged-port settings (`deploy-server.sh:520-576`).
 2. **Build the backend** - `./gradlew :services:karyo-app:quarkusBuild -Dquarkus.profile=prod`
-   (`deploy-server.sh:598-612`).
+   (`deploy-server.sh:588-602`).
 3. **Build the front ends** - `npm ci && npm run build` in `frontend/web` and `frontend/mobile`
-   (`deploy-server.sh:618-641`).
+   (`deploy-server.sh:608-631`).
 4. **Build both images** with a determinism setting and `--no-cache`
-   (`deploy-server.sh:647-675`); see [container images](container-images.md).
+   (`deploy-server.sh:637-665`); see [container images](container-images.md).
 5. **Check the environment file** - create it if missing, enforce mode 0600, validate it and render
-   the four service files (`deploy-server.sh:690-728`).
+   the four service files (`deploy-server.sh:680-718`).
 6. **Start infrastructure** - tear down the previous run, check ports, start PostgreSQL, verify the
    persisted role password, decide whether Keycloak's database is fresh, then start Keycloak
-   (`deploy-server.sh:734-784`).
+   (`deploy-server.sh:724-774`).
 7. **Start the application** - `karyo-app`, then nginx, each with its own bounded health wait
-   (`deploy-server.sh:790-797`).
+   (`deploy-server.sh:780-787`).
 8. **Verify the stack** - four API probes through nginx, a realm check and an SPA check
-   (`deploy-server.sh:803-838`).
+   (`deploy-server.sh:793-828`).
 
 `--quick` skips Stages 2-4; `--reset-db` adds volume destruction to Stage 6. The interesting parts
 are the orderings, each of which exists because something went wrong once.
 
 **Stage 6 starts PostgreSQL alone, first.** `verify_postgres_role_password` then authenticates
 the *persisted* role with the password from the environment file, before Keycloak or the
-application are allowed to start (`deploy-server.sh:752-759`). Credentials are expanded inside
-the container shell, never in the host command arguments (`deploy-server.sh:207-216`).
+application are allowed to start (`deploy-server.sh:742-749`). Credentials are expanded inside
+the container shell, never in the host command arguments (`deploy-server.sh:194-203`).
 
 **Bootstrap credentials are decided by the database.** See
 [Provisioning the first administrator](#provisioning-the-first-administrator).
@@ -764,20 +758,20 @@ the container shell, never in the host command arguments (`deploy-server.sh:207-
 **Health waits are per service and bounded separately.** Keycloak gets 420 seconds rather than
 200, because on a cold volume it runs Liquibase to build its entire schema and then imports the
 realm - measured at 224 seconds on an empty database. Warm starts take about 30 seconds, so the
-headroom costs nothing in the common case (`deploy-server.sh:778-784`). The Compose
+headroom costs nothing in the common case (`deploy-server.sh:768-774`). The Compose
 `start_period` values exist for the same reason and are commented the same way
 (`docker-compose.prod.yml:19-25,60-63`).
 
 **Stage 7 starts the application and nginx one at a time**, each with its own wait, because
 starting nginx in the same Compose call can wait forever for a restart-looping application before
-the script's own timer runs (`deploy-server.sh:792-797`). A wait that times out prints the last
-twenty lines of that service's log (`deploy-server.sh:120-145`).
+the script's own timer runs (`deploy-server.sh:782-787`). A wait that times out prints the last
+twenty lines of that service's log (`deploy-server.sh:107-132`).
 
 `check_service_healthy` matches the health status **exactly**, because a plain
-`grep -q "healthy"` also matches "unhealthy" (`deploy-server.sh:179-180`), and containers are
+`grep -q "healthy"` also matches "unhealthy" (`deploy-server.sh:166-167`), and containers are
 selected by Compose project and service labels rather than by name substring, so a healthy
 container from another deployment cannot conceal this stack's failure
-(`deploy-server.sh:164-170`).
+(`deploy-server.sh:151-157`).
 
 What "healthy" means differs per service. PostgreSQL runs `pg_isready`, the application and
 nginx run `wget` against `/q/health/ready` and `/`, and Keycloak opens a bare TCP socket against
@@ -789,7 +783,7 @@ less than the endpoint it enables is not recorded.
 
 Four `GET`s through nginx - `/api/v1/{stock-units,products,locations,users}` - counted as healthy
 on 200, 401 or 403, plus a Keycloak realm check and an SPA check that only warn
-(`deploy-server.sh:805-838`).
+(`deploy-server.sh:795-828`).
 
 Accepting 401 and 403 is right: the probe is unauthenticated, and a route that refuses it is
 working. What it proves is therefore routing, not authorised functionality. A healthy backend does
@@ -825,7 +819,7 @@ property of the PostgreSQL image's entrypoint, not a fault. It creates the `kary
 (belt-and-braces, since Flyway has `create-schemas: true`) and the `keycloak` database
 (`init-db.sh:4-13`).
 
-The port pre-flight checks `NGINX_HTTP_PORT` **and 5432** (`deploy-server.sh:470-491`), and the
+The port pre-flight checks `NGINX_HTTP_PORT` **and 5432** (`deploy-server.sh:457-478`), and the
 production stack publishes no 5432: the `postgresql` service has no `ports` key
 (`docker-compose.prod.yml:7-28`). **Known defect.** Any local PostgreSQL, or a development stack,
 blocks a production deploy with a message that names a real process and implies a conflict that
@@ -838,7 +832,7 @@ The stack serves plain HTTP on one host port. Nothing in this repository configu
 certificate, so TLS must terminate in front of the stack, at a reverse proxy or a tunnel.
 
 One route that needs no open firewall port is a Cloudflare Tunnel, which is why the deploy script
-checks for `cloudflared` and only warns when it is absent (`deploy-server.sh:537-538,848-852`):
+checks for `cloudflared` and only warns when it is absent (`deploy-server.sh:527-528,848-852`):
 
 1. Install `cloudflared` and authenticate with `cloudflared tunnel login`.
 2. Create a tunnel: `cloudflared tunnel create karyo`.
@@ -853,13 +847,13 @@ origin browsers actually use.
 Docker runs as a root daemon and needs neither of these. Two host-level prerequisites are warned
 about rather than enforced, because both need root:
 
-- **Linger**, so containers survive an SSH disconnect (`deploy-server.sh:553-560`):
+- **Linger**, so containers survive an SSH disconnect (`deploy-server.sh:543-550`):
 
   ```bash
   sudo loginctl enable-linger $(whoami)
   ```
 
-- **Binding port 80** without root (`deploy-server.sh:562-570`):
+- **Binding port 80** without root (`deploy-server.sh:552-560`):
 
   ```bash
   sudo sysctl -w net.ipv4.ip_unprivileged_port_start=80
@@ -872,18 +866,18 @@ about rather than enforced, because both need root:
 ## Cloud hosts
 
 The same script deploys to a cloud virtual machine. Install Docker with the Compose plugin, a JDK
-21, Node.js 22.12 or newer, Python 3, Git and, if used, `cloudflared`; clone the repository;
+21, Node.js 24.x (the line declared once in `.nvmrc`), Python 3, Git and, if used, `cloudflared`; clone the repository;
 create `scripts/.env.prod` from `scripts/.env.prod.cloud-example`, whose resource limits suit a
 24 GB four-core ARM64 host; export `GRADLE_OPTS` for a larger build heap; and run
 `./scripts/deploy-server.sh`. Every base image in the stack has an ARM64 variant:
 `postgres:16-alpine`, `quay.io/keycloak/keycloak:26.0`, `eclipse-temurin:21-jre-alpine`,
-`node:22-alpine` and `nginx:1.30.4-alpine`.
+`node:24-alpine` and `nginx:1.30.4-alpine`.
 
 ## Every deploy is an outage
 
 The script's own header says "Re-running recreates the selected stack; plan an outage"
 (`deploy-server.sh:7`). Stage 6 runs `compose down --remove-orphans` before anything starts, and
-`--reset-db` makes that `down -v` (`deploy-server.sh:736-747`). There is no rolling restart, no
+`--reset-db` makes that `down -v` (`deploy-server.sh:726-737`). There is no rolling restart, no
 second replica and no blue/green: one host, one instance, and a stop before the start. That
 follows from the topology and is deliberate; its cost is a planned window for every change,
 including a configuration-only `--quick`.
@@ -913,7 +907,7 @@ alone cannot fix the checksum of an edited old file. Do not repair, re-baseline 
 retained data to conceal a mismatch. `--reset-db` is only for explicitly disposable data.
 
 **Podman: a health check hangs.** Exec-based health checks can hang under Podman; Docker is
-unaffected (`deploy-server.sh:756-758`). If Keycloak's check hangs, rerun the script; the second
+unaffected (`deploy-server.sh:746-748`). If Keycloak's check hangs, rerun the script; the second
 run usually succeeds. Switch to Docker if it happens often.
 
 **"init-db.sh did not run on redeploy".** Expected: it runs only when the data directory is
