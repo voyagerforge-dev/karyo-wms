@@ -80,9 +80,9 @@ Six of these need a commercial engine and otherwise show a locked panel: **Waves
 **Occupancy** are part of the free application. See
 [commercial engines](../commercial/README.md).
 
-On the free **Reports** page, note that the **Export CSV** button is placed but not yet
-connected: pressing it says so and produces no file. To get stock data out as CSV, use the
-**Export** button on [Inventory](find-stock.md) instead, which is wired.
+The free **Reports** page is a KPI dashboard and has no CSV export - there is no single report
+to produce a file from. CSV export lives on the list screens instead: the **Export** button on
+[Inventory](find-stock.md) and on **Orders** each downloads a file.
 
 ## Every list screen works the same way
 

@@ -136,4 +136,31 @@ describe('ReportsPage', () => {
     await user.click(screen.getByLabelText('Delete Daily throughput summary'));
     await waitFor(() => expect(mockDeleteMutateAsync).toHaveBeenCalledWith(1));
   });
+
+  it('does not render the unwired Export CSV button (CSV export lives on the list pages)', async () => {
+    render(createElement(ReportsPage));
+    await waitFor(() => expect(screen.getByText('Inventory accuracy')).toBeInTheDocument());
+    expect(screen.queryByText('Export CSV')).not.toBeInTheDocument();
+  });
+
+  it('New report opens the real create-report dialog and saves via POST /report-definitions', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event');
+    const user = userEvent.setup();
+    mockCreateMutateAsync.mockResolvedValue({ id: 9 });
+    render(createElement(ReportsPage));
+    await waitFor(() => expect(screen.getByTestId('new-report-btn')).toBeInTheDocument());
+
+    await user.click(screen.getByTestId('new-report-btn'));
+    expect(await screen.findByText('New saved report')).toBeInTheDocument();
+
+    await user.type(screen.getByPlaceholderText('Weekly throughput'), 'Weekly throughput');
+    await user.type(screen.getByPlaceholderText('throughput'), 'throughput');
+    await user.click(screen.getByRole('button', { name: /save report/i }));
+    await waitFor(() =>
+      expect(mockCreateMutateAsync).toHaveBeenCalledWith({
+        name: 'Weekly throughput',
+        reportType: 'throughput',
+      }),
+    );
+  });
 });

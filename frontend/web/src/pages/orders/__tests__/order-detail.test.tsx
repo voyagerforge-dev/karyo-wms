@@ -16,9 +16,11 @@ vi.mock('@/lib/document-actions', () => ({
 const cancelMutate = vi.fn();
 const claimMutate = vi.fn();
 const releaseOperatorMutate = vi.fn();
+const retryMutate = vi.fn();
 vi.mock('../use-orders', () => ({
   useDeliveryOrder: vi.fn(() => ({ data: undefined, isLoading: false })),
   useReleaseOrder: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+  useRetryReservation: vi.fn(() => ({ mutate: retryMutate, isPending: false })),
   useCancelOrder: vi.fn(() => ({ mutate: cancelMutate, isPending: false })),
   useClaimOrder: vi.fn(() => ({ mutate: claimMutate, isPending: false })),
   useReleaseOperator: vi.fn(() => ({ mutate: releaseOperatorMutate, isPending: false })),
@@ -463,5 +465,61 @@ describe('OrderDetail - Row 10 operator claim and derived document links', () =>
     );
     await user.click(screen.getByTestId('doc-label-btn'));
     expect(saveZpl).toHaveBeenCalledWith('/api/v1/shipping-units/7/label.zpl', 'DO-9-label.zpl');
+  });
+});
+
+describe('OrderDetail — unwired controls resolved', () => {
+  beforeEach(() => {
+    mockUseOrderActivity.mockReturnValue({ data: [], isLoading: false });
+    retryMutate.mockClear();
+    mockRoles = ['order-read', 'order-write'];
+  });
+
+  it('offers Retry reservation on a RELEASED(100) order and calls the mutation with the id', async () => {
+    const user = userEvent.setup();
+    renderDetail(
+      order({ id: 5, state: ORDER_STATE.RELEASED, lines: [line({ amount: 10, shortage: 4 })] }),
+    );
+    const btn = screen.getByTestId('order-retry-reservation-btn');
+    expect(btn).toHaveTextContent('Retry reservation');
+    await user.click(btn);
+    // matches the backend gate: POST /retry-reservation only accepts RELEASED orders
+    expect(retryMutate).toHaveBeenCalledWith(5);
+  });
+
+  it('hides Retry reservation without order-write', () => {
+    renderDetail(order({ state: ORDER_STATE.RELEASED, lines: [line({ shortage: 4 })] }), false);
+    expect(screen.queryByTestId('order-retry-reservation-btn')).not.toBeInTheDocument();
+  });
+
+  it('shows no Retry reservation on states the endpoint would 409 (PICKED, CANCELED)', () => {
+    const r1 = renderDetail(order({ state: ORDER_STATE.PICKED }));
+    expect(screen.queryByTestId('order-retry-reservation-btn')).not.toBeInTheDocument();
+    r1.unmount();
+    renderDetail(order({ state: ORDER_STATE.CANCELED }));
+    expect(screen.queryByTestId('order-retry-reservation-btn')).not.toBeInTheDocument();
+  });
+
+  it('no longer renders the former no-op Allocate / Print docs / Hold / More actions controls', () => {
+    // a RELEASED order used to surface all four placeholder controls
+    renderDetail(order({ state: ORDER_STATE.RELEASED, lines: [line({ shortage: 4 })] }));
+    expect(screen.queryByText('Allocate')).not.toBeInTheDocument();
+    expect(screen.queryByText('Print docs')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Hold' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('More actions')).not.toBeInTheDocument();
+  });
+
+  it('keeps the shortage strip informational with no no-op Substitute / Backorder / Dismiss buttons', () => {
+    renderDetail(
+      order({
+        state: ORDER_STATE.RELEASED,
+        lines: [line({ itemDataNumber: 'SKU-9', amount: 10, shortage: 4 })],
+      }),
+    );
+    const strip = screen.getByTestId('copilot-exception');
+    expect(within(strip).getByText(/short by/i)).toBeInTheDocument();
+    expect(within(strip).queryByRole('button', { name: 'Substitute' })).not.toBeInTheDocument();
+    expect(within(strip).queryByRole('button', { name: 'Backorder' })).not.toBeInTheDocument();
+    expect(within(strip).queryByRole('button', { name: 'Dismiss' })).not.toBeInTheDocument();
   });
 });

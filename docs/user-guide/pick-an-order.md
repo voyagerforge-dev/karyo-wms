@@ -40,12 +40,13 @@ What happens next depends entirely on whether it found enough:
 Your options are to receive more, [replenish](replenish.md) into the pick face, release the
 reservation and cancel, or let a later retry pick it up once stock arrives.
 
-A red Copilot strip above the line items reports the shortfall, offering **Substitute** and
-**Backorder**. Neither is connected, so treat it as a description and use the options above.
-Do not read the strip as a verdict on the order: it appears for **any line whose reserved
-amount is below the amount ordered**, with no check on the order's state. On an order you have
-not released yet nothing is reserved, so every line is short and the strip is already there.
-It clears line by line as reservations cover the amounts.
+A red Copilot strip above the line items reports the shortfall. It is informational: there is
+no order-side substitute or backorder operation, so it carries no action buttons - it names the
+short line and points you back at the options above. Do not read the strip as a verdict on the
+order: it appears for **any line whose reserved amount is below the amount ordered**, with no
+check on the order's state. On an order you have not released yet nothing is reserved, so every
+line is short and the strip is already there. It clears line by line as reservations cover the
+amounts.
 
 Reserved stock immediately reads as **Allocated** on [Inventory](find-stock.md). It is still
 physically on the shelf, but it is spoken for and Karyo will not offer it to another order.
@@ -67,20 +68,22 @@ Three refusals you may meet, each meaning something specific:
 | *"no PACK_STAGING location configured"* | Your warehouse has no pack-staging location. This is a setup gap, not an order problem. See [Administer Karyo](administer-karyo.md). |
 | *"already released to picking"* | Somebody beat you to it. |
 
-### Controls on this screen that are not connected
+### The primary button by state
 
-When an order is in neither of the two states above, the primary button reads **Allocate**.
-**It is not connected**: pressing it shows a short "not wired yet" message and does nothing.
-The two working actions are **Release** and **Release to picking**, described above.
+The primary button tracks what the order actually needs, and shows nothing when there is
+nothing to do:
 
-The same applies to **Print docs**, **Hold** and the **More actions** (`...`) button beside
-them, and to **Substitute** and **Backorder** on the red Copilot strip that appears whenever a
-line is short. That strip's **Dismiss** button behaves differently and is worth knowing about:
-it reports *"Exception dismissed"* and stores nothing, so the strip returns the moment the
-screen refreshes. The shortfall goes away when the stock arrives, not when you dismiss it.
+- **Created** -> **Release**, which reserves stock.
+- **Released with short lines** -> **Retry reservation**. It re-runs reservation for the
+  pending lines - the manual form of the automatic retry - and moves the order on once every
+  line is covered.
+- **Processable** -> **Release to picking**.
 
-The delivery note button that appears once an order reaches **Picked** is real, and produces
-a document.
+Past those stages - picking, packed, shipped or canceled - there is no primary action, so no
+button is shown rather than a placeholder.
+
+The delivery note, label and archive buttons that appear once an order reaches **Picked** are
+real and produce documents.
 
 ## What else the order screen tells you
 

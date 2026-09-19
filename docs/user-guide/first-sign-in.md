@@ -82,9 +82,6 @@ may do, the goods owner decides which stock you do it to.
   this installation does not have. See [commercial engines](../commercial/README.md); nothing is
   broken and no setting will turn it on.
 - **A menu entry is missing.** See permissions, above.
-- **A button does nothing but show a small "not wired yet" message.** A few controls in the
-  console are placed but not yet connected. Where this guide meets one, it says so and gives
-  you the route that does work.
 - **The floor app says work failed to sync.** Open **Sync issues** from the red banner on the
   work inbox. See [the floor app](floor-app.md).
 

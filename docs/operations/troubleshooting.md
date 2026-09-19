@@ -51,28 +51,12 @@ workflow around it is complete.
 The screens that do this without an engine are Waves, Streaming, Monitors, Forecasting, Slotting,
 Simulation, Document templates, and the Exceptions card on the dashboard.
 
-### A button shows a small "not wired yet" message
-
-A few console controls are placed but not connected: **Allocate**, **Print docs**, **Hold** and
-**More actions** on the order screen, **Substitute** and **Backorder** on the Copilot strip there,
-**Replenish** on an item, **Export CSV** on Reports, and the **Notifications** bell in the console
-header, which has no notifications feed behind it and so shows no unread count. The
-[user guide](../user-guide/README.md) names the working route in each case. For allocation it is
-**Release** followed by **Release to picking**; for replenishment it is **Scan now** on the Tasks
-board; for stock as CSV it is **Export** on the Inventory screen.
-
 ### The Copilot strip appears on an order I have not released
 
 The strip is driven by the lines alone: it shows for any line whose reserved amount is below the
 amount ordered, with no check on the order's state. Nothing is reserved before you press
 **Release**, so a brand-new order shows the strip with every line "short". It clears as
 reservations cover the amounts.
-
-### The Copilot strip says "Exception dismissed" but comes back
-
-**Dismiss** on the short-line Copilot strip is the one unconnected control that reports success
-instead of saying it is not wired. It stores nothing, so the strip reappears on the next refresh.
-The strip is driven by the line shortage itself and clears when the shortage does.
 
 ### The numbers at the top of Inventory do not match my warehouse total
 
