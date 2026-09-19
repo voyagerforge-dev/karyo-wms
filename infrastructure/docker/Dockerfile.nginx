@@ -37,9 +37,9 @@ COPY --from=builder /app/dist/index.html /usr/share/nginx/html/index.html.templa
 COPY --from=mobile-builder /app/dist /usr/share/nginx/html/m
 COPY --from=mobile-builder /app/dist/index.html /usr/share/nginx/html/m/index.html.template
 
-# Custom entrypoint: envsubst on index.html then start nginx
-COPY infrastructure/docker/nginx/docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+# Custom entrypoint: envsubst on index.html, render the upstream resolver, then start nginx
+COPY infrastructure/docker/nginx/docker-entrypoint.sh infrastructure/docker/nginx/render-resolver.sh /
+RUN chmod +x /docker-entrypoint.sh /render-resolver.sh
 
 # Licence notices, at the same documented path as the application image
 # (Apache-2.0 section 4(d)): `docker run --rm --entrypoint cat <image> /app/NOTICE`, the same
