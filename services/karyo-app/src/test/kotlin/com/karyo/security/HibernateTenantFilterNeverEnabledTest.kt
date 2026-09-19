@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test
  * call.
  *
  * The check runs against the booted persistence unit: the registered filter definition must not be
- * auto-enabled, and the session application code receives inside a transaction must not have it
+ * auto-enabled, and a transactional session opened outside any HTTP request must not have it
  * enabled. If either changes, reconcile the documentation above in the same pull request.
  */
 @QuarkusTest
