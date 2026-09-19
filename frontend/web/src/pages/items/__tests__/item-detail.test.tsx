@@ -91,4 +91,12 @@ describe('ItemDetail', () => {
 
     expect(onEdit).toHaveBeenCalledTimes(1);
   });
+
+  it('no longer renders the unwired per-item Replenish button (Edit remains)', () => {
+    // Replenishment is a warehouse-wide scan (Fulfillment > Tasks > Replenish), not per-item,
+    // so the item detail no longer offers a control that implies an item-scoped operation.
+    render(<ItemDetail item={baseItem} {...defaultProps} />);
+    expect(screen.queryByRole('button', { name: 'Replenish' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+  });
 });

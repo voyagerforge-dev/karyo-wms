@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, Link } from 'react-router';
-import { Bell, LogOut, Search, User, Shield, SlidersHorizontal } from 'lucide-react';
+import { LogOut, Search, User, Shield, SlidersHorizontal } from 'lucide-react';
 import { useAuth } from '@/components/auth/auth-provider';
 import { useCommandPalette } from '@/components/command/command-palette-provider';
 import { ModeToggle } from '@/components/theme/mode-toggle';
@@ -162,12 +162,8 @@ export function AppHeader() {
           <span className="sr-only">Workspace settings</span>
         </Button>
 
-        {/* Notifications. No unread count: there is no notifications feed behind this bell
-            yet, and the badge it used to wear was a hardcoded "3". */}
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-[1.2rem] w-[1.2rem]" />
-          <span className="sr-only">Notifications</span>
-        </Button>
+        {/* No notifications bell: there is no notifications feed to back one, so the header
+            does not show a control that does nothing when clicked. */}
 
         {/* User */}
         <DropdownMenu>

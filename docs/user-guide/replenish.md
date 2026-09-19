@@ -75,11 +75,9 @@ the location, complete.
 
 The record updates when you complete it, not when you set off.
 
-## One control that does not work
-
-The **Replenish** button on an item's detail page under **Warehouse > Items** is not
-connected. Pressing it says so and does nothing. Use **Scan now** on the Tasks board instead,
-which is the working route and the one described above.
+Replenishment is warehouse-wide, driven by **Scan now** on the Tasks board described above -
+there is no per-item or per-location replenish action, so the item and location detail pages
+do not offer one.
 
 ## When replenishment is not the answer
 

@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
-import { toast } from 'sonner';
-import { Ban, MoreHorizontal, PackageCheck, Send, Sparkles } from 'lucide-react';
+import { Ban, PackageCheck, RefreshCw, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,6 +20,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import {
   useDeliveryOrder,
   useReleaseOrder,
+  useRetryReservation,
   useCancelOrder,
   useClaimOrder,
   useReleaseOperator,
@@ -50,10 +50,6 @@ function fmtTime(iso: string | null | undefined): string {
   return Number.isNaN(d.getTime())
     ? 'pending'
     : d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
-
-function seam(label: string) {
-  toast.info(`${label} — not wired yet`);
 }
 
 /** Build the two ship-to address lines from the order's address fields. */
@@ -107,6 +103,7 @@ export function OrderDetail({ summary, canWrite }: OrderDetailProps) {
   const order = fetched ?? summary;
 
   const releaseMutation = useReleaseOrder();
+  const retryReservation = useRetryReservation();
   const releaseToPicking = useReleaseToPicking();
   const cancelMutation = useCancelOrder();
   const claimMutation = useClaimOrder();
@@ -175,6 +172,15 @@ export function OrderDetail({ summary, canWrite }: OrderDetailProps) {
   // Primary action by stage — real where the backend supports it.
   const canRelease = canWrite && isCreated;
   const canPickRelease = isProcessable; // release-to-picking is the real fulfillment hop
+  // A shortage on release keeps the ORDER at RELEASED(100) with PENDING lines (the order
+  // itself never enters PENDING -- see OrderService.release/retryReservation). That is exactly
+  // the state POST /retry-reservation accepts (it 409s on any other), so gate the button on it.
+  const canRetryReservation = canWrite && order.state === ORDER_STATE.RELEASED;
+  const shortageGuidance = canRelease
+    ? 'Copilot: nothing is reserved yet - release the order to reserve stock.'
+    : canRetryReservation
+      ? 'Copilot: retry reservation to recheck stock.'
+      : null;
 
   // Backend gate: OrderState.canAdvanceTo(CANCELED) allows cancel strictly below
   // PICKED(600) and 409s otherwise -- mirror it exactly so the button never 4xxs.
@@ -233,23 +239,21 @@ export function OrderDetail({ summary, canWrite }: OrderDetailProps) {
               {releaseToPicking.isPending ? 'Releasing…' : 'Release to picking'}
             </button>
           )}
-          {!canRelease && !canPickRelease && (
+          {/* A released order with short lines sits at RELEASED(100); retry-reservation
+              re-checks stock for its PENDING lines (the manual form of the automatic retry).
+              Real, backend-gated action -- replaces the former no-op "Allocate" placeholder. */}
+          {canRetryReservation && (
             <button
               type="button"
-              onClick={() => seam('Allocate')}
-              className="flex h-9 items-center gap-1.5 rounded-[9px] bg-primary px-3.5 text-[13px] font-bold text-primary-foreground"
+              onClick={() => retryReservation.mutate(order.id)}
+              disabled={retryReservation.isPending}
+              data-testid="order-retry-reservation-btn"
+              className="flex h-9 items-center gap-1.5 rounded-[9px] bg-primary px-3.5 text-[13px] font-bold text-primary-foreground disabled:opacity-60"
             >
-              <Send className="size-4" />
-              Allocate
+              <RefreshCw className={cn('size-4', retryReservation.isPending && 'animate-spin')} />
+              {retryReservation.isPending ? 'Retrying…' : 'Retry reservation'}
             </button>
           )}
-          <button
-            type="button"
-            onClick={() => seam('Print docs')}
-            className="h-9 rounded-[9px] border border-border bg-card px-3.5 text-[13px] font-medium text-foreground hover:bg-accent"
-          >
-            Print docs
-          </button>
           {/* Read-only document — no write-perm gate, mirrors the backend's
               order-read requirement. Visible only once the order has reached
               a state the delivery note can honestly reconcile (>= PICKED),
@@ -286,21 +290,6 @@ export function OrderDetail({ summary, canWrite }: OrderDetailProps) {
               Label
             </button>
           )}
-          <button
-            type="button"
-            onClick={() => seam('Hold')}
-            className="h-9 rounded-[9px] border border-border bg-card px-3.5 text-[13px] font-medium text-foreground hover:bg-accent"
-          >
-            Hold
-          </button>
-          <button
-            type="button"
-            onClick={() => seam('More actions')}
-            aria-label="More actions"
-            className="flex size-9 flex-none items-center justify-center rounded-[9px] border border-border bg-card text-muted-foreground hover:text-foreground"
-          >
-            <MoreHorizontal className="size-4" />
-          </button>
           {isCancelable && (
             <Button
               variant="outline"
@@ -346,31 +335,13 @@ export function OrderDetail({ summary, canWrite }: OrderDetailProps) {
               Line {shortLines[0].itemDataNumber} short by{' '}
               {shortLines[0].shortage.toFixed(0)} units
             </div>
-            <div className="mt-0.5 text-[12px] text-foreground/75">
-              Copilot: substitute an equivalent item or backorder the shortfall.
-            </div>
+            {/* Informational only: there is no order-side substitute/backorder operation, so no
+                button pretends there is. The hint names only the header action this order's
+                state and the caller's permissions actually offer, and is omitted otherwise. */}
+            {shortageGuidance && (
+              <div className="mt-0.5 text-[12px] text-foreground/75">{shortageGuidance}</div>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={() => seam('Substitute')}
-            className="h-8 rounded-lg bg-primary px-3.5 text-[12.5px] font-bold text-primary-foreground"
-          >
-            Substitute
-          </button>
-          <button
-            type="button"
-            onClick={() => seam('Backorder')}
-            className="h-8 rounded-lg border border-destructive/20 px-3 text-[12.5px] font-medium text-muted-foreground hover:text-foreground"
-          >
-            Backorder
-          </button>
-          <button
-            type="button"
-            onClick={() => toast.success('Exception dismissed')}
-            className="h-8 rounded-lg border border-destructive/20 px-3 text-[12.5px] font-medium text-muted-foreground hover:text-foreground"
-          >
-            Dismiss
-          </button>
         </div>
       )}
 

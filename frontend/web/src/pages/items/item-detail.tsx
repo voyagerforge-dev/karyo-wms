@@ -1,5 +1,4 @@
 import { ArrowDown, ArrowUp, Box } from 'lucide-react';
-import { toast } from 'sonner';
 import { AttributeGrid } from '@/components/control/attribute-grid';
 import { ClassChip } from '@/components/control/class-chip';
 import { DemandSparkbars } from '@/components/control/demand-sparkbars';
@@ -79,15 +78,9 @@ export function ItemDetail({
           </p>
         </div>
         <div className="flex flex-none gap-2">
-          <button
-            type="button"
-            onClick={() =>
-              toast('Replenish', { description: `Replenishment for ${item.sku} is not wired yet.` })
-            }
-            className="h-9 rounded-[9px] bg-primary px-3.5 text-[13px] font-bold text-primary-foreground transition-opacity hover:opacity-90"
-          >
-            Replenish
-          </button>
+          {/* Replenishment is warehouse-wide (a fix-assignment scan), not per-item -- there is
+              no item-scoped endpoint, so no button implies one here. The working route is
+              Fulfillment > Tasks > Replenish ("Scan now"). */}
           <button
             type="button"
             onClick={onEdit}

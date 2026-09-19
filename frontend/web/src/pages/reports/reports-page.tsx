@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Download, Plus, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useKpis } from '@/features/insights/use-kpis';
@@ -136,29 +136,9 @@ export function ReportsPage() {
         </div>
       </div>
 
-      {/* PAGE-LEVEL ACTIONS */}
-      <div className="mb-[18px] flex justify-end gap-[10px]">
-        <button
-          type="button"
-          onClick={() =>
-            toast('Export CSV', { description: 'CSV export is not wired yet.' })
-          }
-          className="flex h-[38px] items-center gap-[7px] rounded-[10px] border border-border bg-secondary px-[14px] text-[13px] font-medium text-foreground/85 transition-colors hover:bg-accent"
-        >
-          <Download className="h-[15px] w-[15px]" />
-          Export CSV
-        </button>
-        <button
-          type="button"
-          onClick={() =>
-            toast('Build report', { description: 'Report builder lands in a later milestone.' })
-          }
-          className="flex h-[38px] items-center gap-[7px] rounded-[10px] bg-primary px-[15px] text-[13px] font-bold text-primary-foreground transition-opacity hover:opacity-90"
-        >
-          <Plus className="h-4 w-4" strokeWidth={2.4} />
-          Build report
-        </button>
-      </div>
+      {/* No page-level actions: CSV export is a list-page capability (Orders and Inventory
+          have wired Export buttons) and the KPI dashboard has no CSV endpoint; new reports
+          are created from the Saved reports card. */}
 
       {/* KPI TREND TILES */}
       {isError && (

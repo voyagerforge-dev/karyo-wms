@@ -136,4 +136,11 @@ describe('ReportsPage', () => {
     await user.click(screen.getByLabelText('Delete Daily throughput summary'));
     await waitFor(() => expect(mockDeleteMutateAsync).toHaveBeenCalledWith(1));
   });
+
+  it('does not render the unwired Export CSV or Build report buttons', async () => {
+    render(createElement(ReportsPage));
+    await waitFor(() => expect(screen.getByText('Inventory accuracy')).toBeInTheDocument());
+    expect(screen.queryByText('Export CSV')).not.toBeInTheDocument();
+    expect(screen.queryByText('Build report')).not.toBeInTheDocument();
+  });
 });

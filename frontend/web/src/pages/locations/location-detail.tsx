@@ -1,5 +1,4 @@
-import { ArrowDownToLine, ClipboardCheck, Ban, Pencil } from 'lucide-react';
-import { toast } from 'sonner';
+import { Ban, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TONE_COLOR } from '@/components/master-detail/tones';
 import { saveZpl, archiveDocument } from '@/lib/document-actions';
@@ -128,8 +127,8 @@ export function LocationDetail({ view, contents, used, canWrite, onBlock, onEdit
           </p>
         </div>
         <div className="flex gap-2">
-          {/* Read-only document — no write-perm gate, unlike the three
-              action buttons below it. */}
+          {/* Read-only document — no write-perm gate, unlike the Edit and
+              Block buttons below it. */}
           <button
             type="button"
             data-testid="doc-label-btn"
@@ -156,24 +155,9 @@ export function LocationDetail({ view, contents, used, canWrite, onBlock, onEdit
             <Pencil className="mr-1.5 inline size-4" />
             Edit
           </button>
-          <button
-            type="button"
-            disabled={!canWrite}
-            onClick={() => toast.success(`Replenishment queued for ${view.code}`)}
-            className="h-9 rounded-[9px] bg-primary px-3.5 text-[13px] font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <ArrowDownToLine className="mr-1.5 inline size-4" />
-            Replenish
-          </button>
-          <button
-            type="button"
-            disabled={!canWrite}
-            onClick={() => toast.success(`Cycle count scheduled for ${view.code}`)}
-            className="h-9 rounded-[9px] border border-border bg-card px-3 text-[13px] font-medium text-foreground/85 transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <ClipboardCheck className="mr-1.5 inline size-4" />
-            Cycle count
-          </button>
+          {/* No location-scoped replenish or cycle-count endpoint exists: replenishment is a
+              warehouse-wide scan (Fulfillment > Tasks > Replenish) and counts are scoped from
+              Warehouse > Cycle Count. No button here pretends to schedule either from a location. */}
           <button
             type="button"
             disabled={!canWrite}

@@ -123,4 +123,14 @@ describe('LocationDetail — Task 10 Clearing badge + Edit action', () => {
     renderDetail(view(), false);
     expect(screen.getByTestId('location-edit-btn')).toBeDisabled();
   });
+
+  it('no longer renders the unwired Replenish or Cycle count buttons (Edit and Block remain)', () => {
+    // Neither had a location-scoped endpoint: replenishment is a warehouse-wide scan and counts
+    // are scoped from Warehouse > Cycle Count, so no control here fakes a per-location action.
+    renderDetail();
+    expect(screen.queryByRole('button', { name: /Replenish/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Cycle count/ })).not.toBeInTheDocument();
+    expect(screen.getByTestId('location-edit-btn')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Block/ })).toBeInTheDocument();
+  });
 });
