@@ -79,10 +79,10 @@ repair, re-baseline or renumber retained data to conceal it.
    credentials unless a reviewed rotation is part of the change. **Never use `--reset-db` for an
    upgrade.**
 6. **Watch the first boot.** Read the first Flyway and Quarkus errors, not only the final health.
-   Recreating the application or Keycloak alone is enough: nginx re-resolves its `upstream` names
-   at runtime (`nginx.conf:78-109`), so it follows a replaced container to the new address on its
-   own, within about ten seconds, and does not have to be recreated alongside it. Finish
-   verification (see
+   nginx follows a recreated application or Keycloak container on its own and does not have to be
+   recreated alongside it (see
+   [runtime and configuration](../architecture/runtime-and-configuration.md#nginx-routing)).
+   Finish verification (see
    [verifying an installation](operating-an-installation.md#verifying-an-installation)) before
    warehouse work and external effects resume.
 
