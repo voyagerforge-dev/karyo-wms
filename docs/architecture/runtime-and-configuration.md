@@ -32,17 +32,19 @@ Compose with these four containers is the supported deployment
 | `/m/` | floor PWA, SPA fallback to the mobile `index.html` |
 | `/` | desktop console, SPA fallback to the desktop `index.html` |
 
-The `/api/internal/` block is defence in depth (`infrastructure/docker/nginx/nginx.conf:92-102`).
+The `/api/internal/` block is defence in depth (`infrastructure/docker/nginx/nginx.conf:115-125`).
 Cross-module calls are in-process SPI bean injection, not REST, and the application exposes no
 internal REST resources, but without the block the prefix would be reachable from the internet
 through the `/api/` rule. A more specific prefix wins in nginx regardless of ordering.
 
-`/q/health` is proxied deliberately narrowly (`:109-113`). The rest of the `/q/` management
+`/q/health` is proxied deliberately narrowly (`:132-136`). The rest of the `/q/` management
 namespace, metrics included, stays private.
 
 Two operational properties are worth keeping in view because neither is visible from the compose
-file: nginx resolves upstream addresses at startup, so recreating an upstream container needs a
-coordinated nginx refresh, and rootless Podman cannot normally bind port 80.
+file: nginx re-resolves its upstream addresses at runtime - the `karyo-app` and `keycloak` servers
+are marked `resolve` (`nginx.conf:101-109`) - so recreating an upstream container is picked up on
+its own within about ten seconds and needs no coordinated nginx refresh, and rootless Podman cannot
+normally bind port 80.
 
 ## One configuration file
 

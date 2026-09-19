@@ -69,7 +69,7 @@ no path across services for a trace to reveal.
   exporter endpoint
 - `karyo-app/.../application.yaml:312-313,333-335` - tracing off in dev and prod
 - `services/karyo-app/src/test/resources/application.properties:14-15` - tracing off in tests
-- `infrastructure/docker/nginx/nginx.conf:109-114` - only `/q/health` is proxied
+- `infrastructure/docker/nginx/nginx.conf:132-137` - only `/q/health` is proxied
 - `infrastructure/docker/docker-compose.prod.yml:88-92` - the application's healthcheck
 - `libs/karyo-common/src/main/kotlin/com/karyo/common/exception/ProblemDetail.kt:16` - the unused
   `traceId`

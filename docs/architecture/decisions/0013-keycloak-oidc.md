@@ -80,7 +80,7 @@ are exactly the ones that are expensive and risky to build.
 - `frontend/web/src/lib/keycloak.ts:176-181` and `frontend/mobile/src/lib/keycloak.ts:145-150` - `check-sso`, PKCE `S256` and the silent check pages
 - `services/karyo-app/src/main/kotlin/com/karyo/app/auth/KeycloakEventPoller.kt:14-20` - sign-in events polled through the `karyo-backend` service account
 - `scripts/deploy-server.sh:183-190` - the one-time bootstrap credentials required for a fresh production realm
-- `infrastructure/docker/nginx/nginx.conf:118-119` - Keycloak proxied at `/auth/`
+- `infrastructure/docker/nginx/nginx.conf:141-142` - Keycloak proxied at `/auth/`
 
 ## Related
 

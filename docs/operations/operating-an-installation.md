@@ -58,7 +58,7 @@ because SmallRye Config treats an empty resolved value as missing and fails boot
 
 ## What an operator can see
 
-**Health.** `nginx.conf:109-114` proxies `/q/health` and nothing else from the management
+**Health.** `nginx.conf:132-137` proxies `/q/health` and nothing else from the management
 namespace: "the rest of the `/q/` management namespace (metrics, etc.) stays private". The
 container health checks use `/q/health/ready` from inside the network
 (`docker-compose.prod.yml:88-92`). That route carries no authentication, so a readiness body naming

@@ -32,7 +32,7 @@ holding as contracts even with no network between them.
   [ADR 0006](0006-api-and-core-modules.md).
 - Modules call each other through SPI beans injected by CDI and notify each other with synchronous
   CDI events ([ADR 0008](0008-synchronous-rest-and-cdi-events.md)). There is no HTTP between
-  modules; nginx answers `/api/internal/` with 404 (`infrastructure/docker/nginx/nginx.conf:100-102`).
+  modules; nginx answers `/api/internal/` with 404 (`infrastructure/docker/nginx/nginx.conf:123-125`).
 - All modules persist into one PostgreSQL schema
   ([ADR 0004](0004-one-postgresql-database-and-schema.md)) through one Flyway history
   ([ADR 0005](0005-flyway-migrations-at-boot.md)), and refer to one another's rows by id only
@@ -93,7 +93,7 @@ holding as contracts even with no network between them.
 - `services/karyo-app/src/main/resources/application.yaml:11-16` - one datasource for every module
 - `infrastructure/docker/docker-compose.prod.yml:7`, `:30`, `:73`, `:102` - the four containers:
   PostgreSQL, Keycloak, the application, nginx
-- `infrastructure/docker/nginx/nginx.conf:100-102` - no internal HTTP route
+- `infrastructure/docker/nginx/nginx.conf:123-125` - no internal HTTP route
 - `scripts/deploy-server.sh:7` - a deploy recreates the stack
 - [Modules and boundaries](../modules-and-boundaries.md), [Overview](../overview.md)
 

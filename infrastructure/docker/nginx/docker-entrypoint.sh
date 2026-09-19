@@ -21,5 +21,9 @@ if grep -q '${KEYCLOAK_URL}' /usr/share/nginx/html/m/index.html; then
   exit 1
 fi
 
+# Render the `resolver` that nginx.conf's `resolve` upstreams need, from this container's
+# /etc/resolv.conf (see render-resolver.sh). Fails start-up if there is no IPv4 nameserver.
+/render-resolver.sh
+
 # Execute the CMD (nginx)
 exec "$@"
