@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useKpis } from '@/features/insights/use-kpis';
@@ -96,9 +96,6 @@ function toTrendChart(chart: KpiChart, range: ReportRange): TrendChart {
 export function ReportsPage() {
   const [range, setRange] = useState<ReportRange>('30D');
   const { data, isLoading, isError } = useKpis(range);
-  const { hasPermission } = usePermissions();
-  const canWriteReports = hasPermission('report-write');
-  const [newReportOpen, setNewReportOpen] = useState(false);
 
   const trendChart = useMemo<TrendChart>(
     () => (data ? toTrendChart(data.chart, range) : { lineShip: '', lineRecv: '', areaShip: '', axis: axisFor(range) }),
@@ -139,27 +136,9 @@ export function ReportsPage() {
         </div>
       </div>
 
-      {/* PAGE-LEVEL ACTIONS */}
-      {/* CSV export is a list-page capability (Orders and Inventory have wired Export
-          buttons); the KPI dashboard has no CSV endpoint, so it offers none. "New report"
-          opens the real create-report dialog (POST /report-definitions), the same flow the
-          Saved reports card exposes. */}
-      <div className="mb-[18px] flex justify-end gap-[10px]">
-        <Dialog open={newReportOpen} onOpenChange={setNewReportOpen}>
-          <DialogTrigger asChild>
-            <button
-              type="button"
-              disabled={!canWriteReports}
-              data-testid="new-report-btn"
-              className="flex h-[38px] items-center gap-[7px] rounded-[10px] bg-primary px-[15px] text-[13px] font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <Plus className="h-4 w-4" strokeWidth={2.4} />
-              New report
-            </button>
-          </DialogTrigger>
-          <NewReportDialogContent onClose={() => setNewReportOpen(false)} />
-        </Dialog>
-      </div>
+      {/* No page-level actions: CSV export is a list-page capability (Orders and Inventory
+          have wired Export buttons) and the KPI dashboard has no CSV endpoint; new reports
+          are created from the Saved reports card. */}
 
       {/* KPI TREND TILES */}
       {isError && (

@@ -3,7 +3,7 @@
  *
  * /locations is Control master-detail: a single flat list of every location
  * (search + Pick face/Reserve/Blocked filter chips) on the left, a
- * read/action workspace pane (Edit/Replenish/Cycle count/Block) on the
+ * read/action workspace pane (Edit/Block) on the
  * right. There is no <table>, no drawer, and -- per the July redesign -- no
  * zone/area/cluster hierarchy drill-down or zone-creation UI at all: `New
  * location` is the only create affordance, and it always creates a flat

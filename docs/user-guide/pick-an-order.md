@@ -41,12 +41,13 @@ Your options are to receive more, [replenish](replenish.md) into the pick face, 
 reservation and cancel, or let a later retry pick it up once stock arrives.
 
 A red Copilot strip above the line items reports the shortfall. It is informational: there is
-no order-side substitute or backorder operation, so it carries no action buttons - it names the
-short line and points you back at the options above. Do not read the strip as a verdict on the
-order: it appears for **any line whose reserved amount is below the amount ordered**, with no
-check on the order's state. On an order you have not released yet nothing is reserved, so every
-line is short and the strip is already there. It clears line by line as reservations cover the
-amounts.
+no order-side substitute or backorder operation, so it carries no action buttons. Below the
+short line it names the header action that applies - **Release** on a **Created** order,
+**Retry reservation** on a **Released** one - and names none when the order is past those
+stages or you cannot edit it. Do not read the strip as a verdict on the order: it appears for
+**any line whose reserved amount is below the amount ordered**, with no check on the order's
+state. On an order you have not released yet nothing is reserved, so every line is short and
+the strip is already there. It clears line by line as reservations cover the amounts.
 
 Reserved stock immediately reads as **Allocated** on [Inventory](find-stock.md). It is still
 physically on the shelf, but it is spoken for and Karyo will not offer it to another order.
@@ -82,8 +83,9 @@ nothing to do:
 Past those stages - picking, packed, shipped or canceled - there is no primary action, so no
 button is shown rather than a placeholder.
 
-The delivery note, label and archive buttons that appear once an order reaches **Picked** are
-real and produce documents.
+The delivery note and archive buttons appear once an order reaches **Picked**. The **Label**
+button follows its own condition: it appears once a shipment with a shipping unit exists for
+the order. All three are real and produce documents.
 
 ## What else the order screen tells you
 

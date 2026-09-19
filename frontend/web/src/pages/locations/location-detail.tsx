@@ -127,8 +127,8 @@ export function LocationDetail({ view, contents, used, canWrite, onBlock, onEdit
           </p>
         </div>
         <div className="flex gap-2">
-          {/* Read-only document — no write-perm gate, unlike the three
-              action buttons below it. */}
+          {/* Read-only document — no write-perm gate, unlike the Edit and
+              Block buttons below it. */}
           <button
             type="button"
             data-testid="doc-label-btn"

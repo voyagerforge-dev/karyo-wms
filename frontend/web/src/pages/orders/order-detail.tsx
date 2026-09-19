@@ -176,6 +176,11 @@ export function OrderDetail({ summary, canWrite }: OrderDetailProps) {
   // itself never enters PENDING -- see OrderService.release/retryReservation). That is exactly
   // the state POST /retry-reservation accepts (it 409s on any other), so gate the button on it.
   const canRetryReservation = canWrite && order.state === ORDER_STATE.RELEASED;
+  const shortageGuidance = canRelease
+    ? 'Copilot: nothing is reserved yet - release the order to reserve stock.'
+    : canRetryReservation
+      ? 'Copilot: retry reservation to recheck stock.'
+      : null;
 
   // Backend gate: OrderState.canAdvanceTo(CANCELED) allows cancel strictly below
   // PICKED(600) and 409s otherwise -- mirror it exactly so the button never 4xxs.
@@ -330,13 +335,12 @@ export function OrderDetail({ summary, canWrite }: OrderDetailProps) {
               Line {shortLines[0].itemDataNumber} short by{' '}
               {shortLines[0].shortage.toFixed(0)} units
             </div>
-            {/* Informational only. The real routes are the header Retry reservation action
-                (recheck stock), receiving more, or picking-time substitution -- there is no
-                order-side substitute/backorder operation, so no button pretends there is. */}
-            <div className="mt-0.5 text-[12px] text-foreground/75">
-              Copilot: retry reservation to recheck stock, receive more, or substitute it during
-              picking.
-            </div>
+            {/* Informational only: there is no order-side substitute/backorder operation, so no
+                button pretends there is. The hint names only the header action this order's
+                state and the caller's permissions actually offer, and is omitted otherwise. */}
+            {shortageGuidance && (
+              <div className="mt-0.5 text-[12px] text-foreground/75">{shortageGuidance}</div>
+            )}
           </div>
         </div>
       )}

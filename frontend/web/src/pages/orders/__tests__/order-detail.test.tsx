@@ -522,4 +522,33 @@ describe('OrderDetail — unwired controls resolved', () => {
     expect(within(strip).queryByRole('button', { name: 'Backorder' })).not.toBeInTheDocument();
     expect(within(strip).queryByRole('button', { name: 'Dismiss' })).not.toBeInTheDocument();
   });
+
+  it('points the shortage strip at Release on a CREATED order, never at Retry reservation', () => {
+    renderDetail(order({ state: ORDER_STATE.CREATED, lines: [line({ amount: 10, shortage: 10 })] }));
+    const strip = screen.getByTestId('copilot-exception');
+    expect(within(strip).getByText(/release the order to reserve stock/i)).toBeInTheDocument();
+    expect(within(strip).queryByText(/retry reservation/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Release' })).toBeInTheDocument();
+    expect(screen.queryByTestId('order-retry-reservation-btn')).not.toBeInTheDocument();
+  });
+
+  it('points the shortage strip at Retry reservation on a RELEASED order', () => {
+    renderDetail(order({ state: ORDER_STATE.RELEASED, lines: [line({ amount: 10, shortage: 4 })] }));
+    const strip = screen.getByTestId('copilot-exception');
+    expect(within(strip).getByText(/retry reservation to recheck stock/i)).toBeInTheDocument();
+    expect(screen.getByTestId('order-retry-reservation-btn')).toBeInTheDocument();
+  });
+
+  it('names no action on the shortage strip when the header offers none', () => {
+    const r1 = renderDetail(
+      order({ state: ORDER_STATE.RELEASED, lines: [line({ amount: 10, shortage: 4 })] }),
+      false,
+    );
+    let strip = screen.getByTestId('copilot-exception');
+    expect(within(strip).queryByText(/copilot:/i)).not.toBeInTheDocument();
+    r1.unmount();
+    renderDetail(order({ state: ORDER_STATE.CANCELED, lines: [line({ amount: 10, shortage: 10 })] }));
+    strip = screen.getByTestId('copilot-exception');
+    expect(within(strip).queryByText(/copilot:/i)).not.toBeInTheDocument();
+  });
 });
