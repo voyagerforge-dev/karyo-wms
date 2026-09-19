@@ -41,8 +41,8 @@ through the `/api/` rule. A more specific prefix wins in nginx regardless of ord
 namespace, metrics included, stays private.
 
 Two operational properties are worth keeping in view because neither is visible from the compose
-file: nginx re-resolves its upstream addresses at runtime -- the `karyo-app` and `keycloak` servers
-are marked `resolve` (`nginx.conf:101-108`) -- so recreating an upstream container is picked up on
+file: nginx re-resolves its upstream addresses at runtime - the `karyo-app` and `keycloak` servers
+are marked `resolve` (`nginx.conf:101-109`) - so recreating an upstream container is picked up on
 its own within about ten seconds and needs no coordinated nginx refresh, and rootless Podman cannot
 normally bind port 80.
 
