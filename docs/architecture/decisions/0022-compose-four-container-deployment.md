@@ -82,7 +82,7 @@ installation, and its fixed overhead is paid by every installation.
 - `infrastructure/docker/docker-compose.prod.yml:109-110` - the one published port
 - `infrastructure/docker/docker-compose.prod.yml:76,105` - the `:latest` defaults
 - `infrastructure/docker/docker-compose.prod.yml:87` - the memory cap
-- `infrastructure/docker/nginx/nginx.conf:89` - nginx listens on plain HTTP
+- `infrastructure/docker/nginx/nginx.conf:112` - nginx listens on plain HTTP
 - `infrastructure/docker/init-db.sh:10-12` - Keycloak's database in the same server
 - `scripts/deploy-server.sh:4-8` - the installation mechanism, and its warning to plan an outage
 - `scripts/deploy-server.sh:659-675` - both images built on the target host

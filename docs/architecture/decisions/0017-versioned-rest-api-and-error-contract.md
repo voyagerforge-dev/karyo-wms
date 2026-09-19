@@ -84,7 +84,7 @@ The contract as implemented has gaps a client must know about. Each is current b
 - `libs/karyo-common/src/main/kotlin/com/karyo/common/pagination/PaginationParams.kt:14-23` and `libs/karyo-common/src/main/kotlin/com/karyo/common/pagination/SortParser.kt:12` - pagination parameters and sort parsing
 - `libs/karyo-documents/src/main/kotlin/com/karyo/documents/CsvWriter.kt:58,90` - the export cap and its truncation line
 - `services/karyo-app/src/main/resources/application.yaml:312-313,333-335` - tracing disabled in development and production
-- `infrastructure/docker/nginx/nginx.conf:100-102` - `/api/internal/` refused
+- `infrastructure/docker/nginx/nginx.conf:123-125` - `/api/internal/` refused
 
 ## Related
 

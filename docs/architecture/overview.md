@@ -38,7 +38,7 @@ flowchart LR
 | `karyo-app` | The application: every free module in one JVM, with Flyway migrating the schema at boot |
 | `nginx` | Serves both front-end bundles and proxies the API and Keycloak; the only container that publishes a port (`docker-compose.prod.yml:109`) |
 
-nginx routes by path (`infrastructure/docker/nginx/nginx.conf:100-158`):
+nginx routes by path (`infrastructure/docker/nginx/nginx.conf:123-181`):
 
 | Path | Goes to |
 |---|---|

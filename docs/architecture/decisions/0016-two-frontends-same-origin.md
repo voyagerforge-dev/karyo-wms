@@ -67,7 +67,7 @@ that accept a hardware scan as keyboard input.
 
 ## Evidence
 
-- `infrastructure/docker/nginx/nginx.conf:100-104,118,151-160` - `/api/internal/` refused, `/api/` and `/auth/` proxied, `/m/` and `/` served with their fallbacks
+- `infrastructure/docker/nginx/nginx.conf:123-127,141,174-183` - `/api/internal/` refused, `/api/` and `/auth/` proxied, `/m/` and `/` served with their fallbacks
 - `infrastructure/docker/Dockerfile.nginx:31,37` - both builds copied into one image, the floor app under `m/`
 - `frontend/mobile/vite.config.ts:8` - the floor app's `/m/` base
 - `frontend/web/package.json:29-32` and `frontend/mobile/package.json:19-21,43` - React, React Router and the PWA plugin

@@ -19,7 +19,7 @@ caused them while others must happen only once that change has committed.
   fed by the outbox ([ADR 0009](0009-transactional-outbox.md)).
 - **Between modules, direct calls.** A module calls another through an SPI bean injected by CDI
   ([ADR 0006](0006-api-and-core-modules.md)). There is no HTTP between modules and no REST client
-  for one; nginx answers `/api/internal/` with 404 (`infrastructure/docker/nginx/nginx.conf:100-102`).
+  for one; nginx answers `/api/internal/` with 404 (`infrastructure/docker/nginx/nginx.conf:123-125`).
   An operation that spans modules runs in one JTA transaction.
 - **For state changes, synchronous CDI events.** The firing module injects `Event<T>` and fires a
   payload type declared in its `-api`; observers anywhere in the assembled application receive it
@@ -75,7 +75,7 @@ caused them while others must happen only once that change has committed.
 
 ## Evidence
 
-- `infrastructure/docker/nginx/nginx.conf:100-102` - no internal HTTP route
+- `infrastructure/docker/nginx/nginx.conf:123-125` - no internal HTTP route
 - `services/order-service/karyo-orders-core/src/main/kotlin/com/karyo/orders/service/GoodsReceiptService.kt:621-622`,
   `:647-648` - events fired inside the receiving transaction
 - `services/task-service/karyo-tasks-core/src/main/kotlin/com/karyo/tasks/service/TaskService.kt:109-121` -

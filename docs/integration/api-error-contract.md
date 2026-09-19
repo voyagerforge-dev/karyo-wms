@@ -123,7 +123,7 @@ ordinary outcome (see [Allocation and reservation](../functional/allocation-and-
 
 Refusals produced before any resource runs carry their own bodies too - an authentication failure
 from the OIDC layer, or nginx's own 404 for `/api/internal/`
-(`infrastructure/docker/nginx/nginx.conf:100-102`). Those are outside the application's mappers by
+(`infrastructure/docker/nginx/nginx.conf:123-125`). Those are outside the application's mappers by
 construction. The twenty sites above are not: they are the application's own refusals, on the
 application's own routes.
 

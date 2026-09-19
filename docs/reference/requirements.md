@@ -77,7 +77,7 @@ guarantees conferred by this register.
 | DEPLOY-01 | The production profile reads the database and identity settings from environment variables | `services/karyo-app/src/main/resources/application.yaml:316-332` |
 | DEPLOY-02 | Both front ends load the Keycloak URL at container start, so a domain change needs no rebuild | `infrastructure/docker/nginx/docker-entrypoint.sh:8`, `infrastructure/docker/nginx/docker-entrypoint.sh:18` |
 | DEPLOY-03 | One Dockerfile, parameterised by a build argument, builds the application image | `infrastructure/docker/Dockerfile.service` |
-| DEPLOY-04 | nginx routes `/api/` to the application, `/auth/` to Keycloak, `/m/` to the floor PWA and `/` to the desktop console | `infrastructure/docker/nginx/nginx.conf:104-158` |
+| DEPLOY-04 | nginx routes `/api/` to the application, `/auth/` to Keycloak, `/m/` to the floor PWA and `/` to the desktop console | `infrastructure/docker/nginx/nginx.conf:127-181` |
 | DEPLOY-05 | A single idempotent deploy script brings up the supported Compose deployment | `scripts/deploy-server.sh`; [deploying Karyo](../operations/deploying.md) |
 | CLOUD-01 | The deploy script detects Docker or Podman | `scripts/deploy-server.sh` |
 | CLOUD-02 | The application container's memory limit comes from the environment file (`APP_MEM_LIMIT`), with a default | `infrastructure/docker/docker-compose.prod.yml`, `scripts/.env.prod.example` |

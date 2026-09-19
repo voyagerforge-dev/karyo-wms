@@ -11,7 +11,7 @@ their own under the same prefix when they are installed; the counts below are fo
 Every resource in the tree declares a path under `/api/v1`. There are 42 distinct class-level
 `@Path` values and no other prefix anywhere: no `/api/v2`, no `/api/mobile`, no `/api/internal`
 resource. nginx additionally answers 404 for anything under `/api/internal/`
-(`infrastructure/docker/nginx/nginx.conf:100-102`), so no such route is reachable through the proxy
+(`infrastructure/docker/nginx/nginx.conf:123-125`), so no such route is reachable through the proxy
 even if one were added.
 
 Across those resources there are 252 annotated methods: 97 `@GET`, 106 `@POST`, 26 `@DELETE`,
@@ -33,7 +33,7 @@ No module declares the SmallRye OpenAPI extension. `gradle/libs.versions.toml` h
 coordinate, `services/karyo-app/build.gradle.kts:80-108` lists the assembled Quarkus extension union
 and OpenAPI is not in it, and the whole source tree contains **zero** imports of
 `org.eclipse.microprofile.openapi`. `/q/openapi` and `/q/swagger-ui` do not exist, and nginx would
-not proxy them if they did: only `/q/health` is exposed (`nginx.conf:111-114`).
+not proxy them if they did: only `/q/health` is exposed (`nginx.conf:134-137`).
 
 This is the single most consequential property of this surface for an integrator: the contract is
 the Kotlin source, and nothing else. It also sits uneasily with the rest of the product, which ships
@@ -133,7 +133,7 @@ plan around any of them:
 | Deprecation / `Sunset` headers | No resource or filter emits either |
 | HATEOAS links | No `_links` in any DTO |
 | Bulk import, file upload, EDI | The free build has no upload route at all (the only body-bearing upload belongs to a commercial engine, see [Documents and printing](documents-and-printing.md)); the integration hub's build-file comment lists import/export and ERP adapters as not yet built (`settings.gradle.kts:81`) |
-| TLS at the application edge | `nginx.conf:89` is `listen 80`. TLS in front of the stack is the operator's; see [Deploying](../operations/deploying.md) |
+| TLS at the application edge | `nginx.conf:112` is `listen 80`. TLS in front of the stack is the operator's; see [Deploying](../operations/deploying.md) |
 
 The single body-size limit that does apply to every request is nginx's `client_max_body_size 10m`
 (`nginx.conf:19`).
