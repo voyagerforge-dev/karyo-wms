@@ -65,11 +65,12 @@ then filter, sort and total within it. Use **Export** for a full extract.
 
 ## Orders that will not move
 
-### Releasing an order leaves it "Pending"
+### Releasing an order leaves it on "Exception"
 
-Karyo reserved what it could and could not reserve the rest. Pending means the stock does not
-exist, not that the order is queued. Receive more, [replenish](../user-guide/replenish.md) the pick
-face, or cancel.
+Karyo reserved what it could and could not reserve the rest, so the order stays **Released** with
+short lines. That means the stock does not exist, not that the order is queued. Receive more or
+[replenish](../user-guide/replenish.md) the pick face and press **Retry reservation**, or cancel.
+See [pick an order](../user-guide/pick-an-order.md).
 
 Check as well that the stock you expected is not **held** or already **allocated** to another
 order. Held stock is never selected.

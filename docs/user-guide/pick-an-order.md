@@ -33,12 +33,12 @@ stock for it, following the order's configured picking strategy.
 What happens next depends entirely on whether it found enough:
 
 - **Every line fully reserved** puts the order in **Processable**. It is ready to be picked.
-- **Any line short** puts the order in **Pending**. Karyo has reserved what it could and is
-  telling you the rest is not there.
+- **Any line short** leaves the order **Released**, with its status pill on **Exception**.
+  Karyo has reserved what it could and is telling you the rest is not there.
 
-**Pending is not a failure and not a queue.** It is Karyo saying the stock does not exist yet.
-Your options are to receive more, [replenish](replenish.md) into the pick face, release the
-reservation and cancel, or let a later retry pick it up once stock arrives.
+**A short order is not a failure and not a queue.** It is Karyo saying the stock does not exist
+yet. Your options are to receive more or [replenish](replenish.md) into the pick face and then
+press **Retry reservation**, or release the reservation and cancel.
 
 A red Copilot strip above the line items reports the shortfall. It is informational: there is
 no order-side substitute or backorder operation, so it carries no action buttons. Below the
@@ -76,8 +76,9 @@ nothing to do:
 
 - **Created** -> **Release**, which reserves stock.
 - **Released with short lines** -> **Retry reservation**. It re-runs reservation for the
-  pending lines - the manual form of the automatic retry - and moves the order on once every
-  line is covered.
+  short lines and moves the order to **Processable** once every line is covered. Only orders
+  released by the optional order streaming engine are retried automatically; any other short
+  order waits for this button.
 - **Processable** -> **Release to picking**.
 
 Past those stages - picking, packed, shipped or canceled - there is no primary action, so no
