@@ -168,9 +168,9 @@ describe("render-resolver.sh (infrastructure/docker/nginx)", () => {
       expected: "resolver 127.0.0.11 ipv6=off valid=10s;\n",
     },
     {
-      label: "several IPv4 nameservers, which are joined",
+      label: "the runtime DNS followed by host nameservers, of which only the first is used",
       resolvConf: "nameserver 10.89.0.1\nnameserver 8.8.8.8\nnameserver 2001:db8::53\nnameserver 1.1.1.1\n",
-      expected: "resolver 10.89.0.1 8.8.8.8 1.1.1.1 ipv6=off valid=10s;\n",
+      expected: "resolver 10.89.0.1 ipv6=off valid=10s;\n",
     },
   ];
 
