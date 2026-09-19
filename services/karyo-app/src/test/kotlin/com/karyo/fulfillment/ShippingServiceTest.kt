@@ -215,11 +215,16 @@ class ShippingServiceTest {
      * location, not the container's pre-dispatch origin. Guards a silent flip back to the old
      * (ship-then-move) order, which would leave the SHIP event pointing at the wrong location.
      *
-     * Runs under a DEDICATED clientId (9601), not the file's usual 1: `StagingLocationLookup`
+     * Runs under a DEDICATED clientId (9701), not the file's usual 1: `StagingLocationLookup`
      * resolves "the first location for this client whose area usages contain SHIP_STAGING", and
      * every other test in this file also seeds a fresh SHIP_STAGING location under clientId 1 with
      * no cleanup between tests, so asserting against "the dock THIS test created" would be
      * order-dependent (flaky) unless this test's dock is the ONLY one its clientId can see.
+     *
+     * This file's dedicated clients are 9701/9702/9703. They sit ABOVE the 95xx-96xx block
+     * `StreamingReleasePortIT` uses (9511-9609): the two suites share the one Dev Services
+     * database, so overlapping "dedicated" clientIds would silently couple them. Keep any new
+     * dedicated client here outside that range.
      */
     @Test
     @TestSecurity(
@@ -228,14 +233,14 @@ class ShippingServiceTest {
             "order-read", "order-write", "layout-read", "layout-write",
             "fulfillment-read", "fulfillment-write", "MANAGER"],
     )
-    @OidcSecurity(claims = [Claim(key = "client_id", value = "9601"), Claim(key = "tenant_code", value = "SHIP-ORDER-TEST")])
+    @OidcSecurity(claims = [Claim(key = "client_id", value = "9701"), Claim(key = "tenant_code", value = "SHIP-ORDER-TEST")])
     fun `dispatch's move-then-ship order makes the SHIP journal and outbox record the dock location`() {
         seedPackStaging()
         val dockName = seedShipStagingNamed()
         val orderId = seedAndReleaseOrderFor60()
         pickToPicked(orderId)
 
-        tenantContext.clientId = 9601L
+        tenantContext.clientId = 9701L
         val shipment = packingService.openPacking(orderId)
         packingService.pack(shipment.id!!, BigDecimal("2.5"), "CARTON")
         entityManager.clear()
@@ -258,7 +263,7 @@ class ShippingServiceTest {
 
         val shippedEvents = outboxEventRepository.find(
             "aggregateType = ?1 and eventType = ?2 and tenantId = ?3 order by created desc",
-            "StockUnit", "StateChanged", 9601L,
+            "StockUnit", "StateChanged", 9701L,
         ).list()
         assertThat(shippedEvents)
             .`as`("a StockUnit StateChanged outbox row must carry the dock's location name")
@@ -278,15 +283,15 @@ class ShippingServiceTest {
             "order-read", "order-write", "layout-read", "layout-write",
             "fulfillment-read", "fulfillment-write", "MANAGER"],
     )
-    @OidcSecurity(claims = [Claim(key = "client_id", value = "9602"), Claim(key = "tenant_code", value = "SHIP-RENAME-ON")])
+    @OidcSecurity(claims = [Claim(key = "client_id", value = "9702"), Claim(key = "tenant_code", value = "SHIP-RENAME-ON")])
     fun `dispatch renames the shipped unit load's labelId when the knob is on, idempotently`() {
         seedPackStaging()
         seedShipStaging()
         val orderId = seedAndReleaseOrderFor60()
         pickToPicked(orderId)
 
-        tenantContext.clientId = 9602L
-        systemPropertyService.set(9602L, "karyo.shipping.rename-unit-load", null, "true")
+        tenantContext.clientId = 9702L
+        systemPropertyService.set(9702L, "karyo.shipping.rename-unit-load", null, "true")
 
         val shipment = packingService.openPacking(orderId)
         packingService.pack(shipment.id!!, BigDecimal("2.5"), "CARTON")
@@ -305,7 +310,7 @@ class ShippingServiceTest {
             .`as`("dispatch must append \"-\" + the unit load's own id to its labelId")
             .isEqualTo("$originalLabel-$unitLoadId")
 
-        tenantContext.clientId = 9602L
+        tenantContext.clientId = 9702L
         val secondCall = unitLoadMover.appendDispatchSuffix(unitLoadId)
         assertThat(secondCall)
             .`as`("a second rename call must be idempotent, not double-append the suffix")
@@ -324,14 +329,14 @@ class ShippingServiceTest {
             "order-read", "order-write", "layout-read", "layout-write",
             "fulfillment-read", "fulfillment-write", "MANAGER"],
     )
-    @OidcSecurity(claims = [Claim(key = "client_id", value = "9603"), Claim(key = "tenant_code", value = "SHIP-RENAME-OFF")])
+    @OidcSecurity(claims = [Claim(key = "client_id", value = "9703"), Claim(key = "tenant_code", value = "SHIP-RENAME-OFF")])
     fun `dispatch leaves the unit load's labelId unchanged when the knob is off by default`() {
         seedPackStaging()
         seedShipStaging()
         val orderId = seedAndReleaseOrderFor60()
         pickToPicked(orderId)
 
-        tenantContext.clientId = 9603L
+        tenantContext.clientId = 9703L
 
         val shipment = packingService.openPacking(orderId)
         packingService.pack(shipment.id!!, BigDecimal("2.5"), "CARTON")
